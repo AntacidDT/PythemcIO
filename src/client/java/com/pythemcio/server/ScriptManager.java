@@ -201,13 +201,7 @@ public class ScriptManager {
         }
 
         private String detectType(String action) {
-            String lower = action.toLowerCase();
-            if (lower.startsWith("chat ")) return "send_chat";
-            if (lower.startsWith("command ")) return "run_command";
-            if (lower.startsWith("title ")) return "show_title";
-            if (lower.startsWith("subtitle ")) return "show_subtitle";
-            if (lower.startsWith("actionbar ")) return "action_bar";
-            return "send_chat";
+            return GameActionHandler.detectType(action);
         }
     }
 }

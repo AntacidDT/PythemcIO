@@ -7,7 +7,9 @@ import net.minecraft.network.chat.Component;
 public class GameActionHandler {
 
     public static String detectType(String action) {
-        String lower = action.toLowerCase();
+        String trimmed = action.trim();
+        if (trimmed.startsWith("/")) return "run_command";
+        String lower = trimmed.toLowerCase();
         if (lower.startsWith("chat ")) return "send_chat";
         if (lower.startsWith("command ")) return "run_command";
         if (lower.startsWith("title ")) return "show_title";
@@ -19,18 +21,17 @@ public class GameActionHandler {
     public static void executeAction(String type, String action, Minecraft mc) {
         if (mc.player == null) return;
 
+        String trimmed = action.trim();
+
         switch (type) {
             case "send_chat" -> {
-                String message = action.substring(5).trim();
+                String message = trimmed.startsWith("chat ") ? trimmed.substring(5).trim() : trimmed;
                 mc.player.connection.sendChat(message);
             }
             case "run_command" -> {
-                String command = action.substring(8).trim();
-                if (command.startsWith("/")) {
-                    mc.player.connection.sendCommand(command.substring(1));
-                } else {
-                    mc.player.connection.sendCommand(command);
-                }
+                String command = trimmed.startsWith("/") ? trimmed.substring(1)
+                    : trimmed.startsWith("command ") ? trimmed.substring(8).trim() : trimmed;
+                mc.player.connection.sendCommand(command);
             }
             case "show_title" -> {
                 String text = action.substring(6).trim();
