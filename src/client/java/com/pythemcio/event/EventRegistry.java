@@ -54,7 +54,7 @@ public class EventRegistry {
     }
 
     public static void fireEvent(String eventName, String context) {
-        if (!TriggerManager.isEnabled()) return;
+        if (!TriggerManager.isEnabledOutput()) return;
 
         List<Trigger> triggers = TriggerManager.getTriggersForEvent(eventName);
         if (triggers.isEmpty()) return;

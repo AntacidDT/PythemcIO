@@ -2,6 +2,8 @@ package com.pythemcio.trigger;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.pythemcio.PythemcIO;
 
@@ -15,8 +17,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TriggerManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Map<String, List<Trigger>> TRIGGERS = new ConcurrentHashMap<>();
+    private static final Map<String, Trigger> INPUT_TRIGGERS = new ConcurrentHashMap<>();
     private static int nextId = 1;
-    private static boolean enabled = true;
+    private static boolean enabledOutput = true;
+    private static boolean enabledInput = false;
     private static Path configDir;
 
     public static void init(Path gameDir) {
@@ -29,9 +33,15 @@ public class TriggerManager {
         load();
     }
 
-    public static Trigger addTrigger(String event, String argument, String[] commands) {
+    public static Trigger addTrigger(String event, String argument, String[] commands, String direction) {
+        if ("i".equals(direction)) {
+            Trigger trigger = new Trigger(nextId++, event, argument, commands, direction);
+            INPUT_TRIGGERS.put(event, trigger);
+            save();
+            return trigger;
+        }
         List<Trigger> eventTriggers = TRIGGERS.computeIfAbsent(event, k -> new ArrayList<>());
-        Trigger trigger = new Trigger(nextId++, event, argument, commands);
+        Trigger trigger = new Trigger(nextId++, event, argument, commands, direction);
         eventTriggers.add(trigger);
         save();
         return trigger;
@@ -53,20 +63,39 @@ public class TriggerManager {
         return TRIGGERS.getOrDefault(event, Collections.emptyList());
     }
 
+    public static Trigger getInputTrigger(String event) {
+        return INPUT_TRIGGERS.get(event);
+    }
+
+    public static Map<String, Trigger> getAllInputTriggers() {
+        return Collections.unmodifiableMap(INPUT_TRIGGERS);
+    }
+
     public static Map<String, List<Trigger>> getAllTriggers() {
         return Collections.unmodifiableMap(TRIGGERS);
     }
 
-    public static boolean isEnabled() {
-        return enabled;
+    public static boolean isEnabledOutput() {
+        return enabledOutput;
     }
 
-    public static void setEnabled(boolean state) {
-        enabled = state;
+    public static boolean isEnabledInput() {
+        return enabledInput;
+    }
+
+    public static void setEnabledOutput(boolean state) {
+        enabledOutput = state;
+        save();
+    }
+
+    public static void setEnabledInput(boolean state) {
+        enabledInput = state;
+        save();
     }
 
     public static void clearAll() {
         TRIGGERS.clear();
+        INPUT_TRIGGERS.clear();
         nextId = 1;
         save();
     }
@@ -75,10 +104,12 @@ public class TriggerManager {
         if (configDir == null) return;
         Path file = configDir.resolve("triggers.json");
         try (Writer writer = Files.newBufferedWriter(file)) {
-            Map<String, Object> data = new LinkedHashMap<>();
-            data.put("nextId", nextId);
-            data.put("enabled", enabled);
-            data.put("triggers", TRIGGERS);
+            JsonObject data = new JsonObject();
+            data.addProperty("nextId", nextId);
+            data.addProperty("enabledOutput", enabledOutput);
+            data.addProperty("enabledInput", enabledInput);
+            data.add("triggers", GSON.toJsonTree(TRIGGERS));
+            data.add("inputTriggers", GSON.toJsonTree(INPUT_TRIGGERS));
             GSON.toJson(data, writer);
         } catch (IOException e) {
             PythemcIO.LOGGER.error("[PythemcIO] Failed to save triggers", e);
@@ -92,26 +123,37 @@ public class TriggerManager {
         if (!Files.exists(file)) return;
 
         try (Reader reader = Files.newBufferedReader(file)) {
-            Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
-            Map<String, Object> data = GSON.fromJson(reader, mapType);
+            JsonObject data = JsonParser.parseReader(reader).getAsJsonObject();
             if (data == null) return;
 
-            if (data.containsKey("nextId")) {
-                nextId = ((Number) data.get("nextId")).intValue();
+            if (data.has("nextId")) {
+                nextId = data.get("nextId").getAsInt();
             }
-            if (data.containsKey("enabled")) {
-                enabled = (Boolean) data.get("enabled");
+            if (data.has("enabledOutput")) {
+                enabledOutput = data.get("enabledOutput").getAsBoolean();
             }
-            if (data.containsKey("triggers")) {
+            if (data.has("enabledInput")) {
+                enabledInput = data.get("enabledInput").getAsBoolean();
+            }
+            if (data.has("triggers")) {
                 Map<String, List<Trigger>> loaded = GSON.fromJson(
-                    GSON.toJson(data.get("triggers")),
+                    data.get("triggers"),
                     new TypeToken<Map<String, List<Trigger>>>() {}.getType()
                 );
                 if (loaded != null) {
                     TRIGGERS.putAll(loaded);
                 }
             }
-        } catch (IOException e) {
+            if (data.has("inputTriggers")) {
+                Map<String, Trigger> loaded = GSON.fromJson(
+                    data.get("inputTriggers"),
+                    new TypeToken<Map<String, Trigger>>() {}.getType()
+                );
+                if (loaded != null) {
+                    INPUT_TRIGGERS.putAll(loaded);
+                }
+            }
+        } catch (Exception e) {
             PythemcIO.LOGGER.error("[PythemcIO] Failed to load triggers", e);
         }
     }

@@ -5,12 +5,14 @@ public class Trigger {
     private String event;
     private String argument;
     private String[] commands;
+    private String direction;
 
-    public Trigger(int id, String event, String argument, String[] commands) {
+    public Trigger(int id, String event, String argument, String[] commands, String direction) {
         this.id = id;
         this.event = event;
         this.argument = argument;
         this.commands = commands;
+        this.direction = direction;
     }
 
     public int getId() {
@@ -33,6 +35,18 @@ public class Trigger {
         return commands;
     }
 
+    public String getDirection() {
+        return direction;
+    }
+
+    public boolean isOutput() {
+        return "o".equals(direction);
+    }
+
+    public boolean isInput() {
+        return "i".equals(direction);
+    }
+
     public boolean matchesContext(String context) {
         if (!hasArgument()) return true;
         if (context == null) return false;
@@ -42,6 +56,6 @@ public class Trigger {
     @Override
     public String toString() {
         String argStr = hasArgument() ? ", argument='" + argument + "'" : "";
-        return "Trigger{id=" + id + ", event='" + event + "'" + argStr + ", commands=" + String.join(", ", commands) + "}";
+        return "Trigger{id=" + id + ", direction='" + direction + "', event='" + event + "'" + argStr + ", commands=" + String.join(", ", commands) + "}";
     }
 }
