@@ -3,6 +3,7 @@ package com.pythemcio.command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.pythemcio.PythemcIO;
 import com.pythemcio.event.EventType;
 import com.pythemcio.security.SecurityManager;
 import com.pythemcio.trigger.Trigger;
@@ -26,7 +27,7 @@ public class PythemcioCommand {
                             .executes(PythemcioCommand::executeAdd))))
                 .then(ClientCommandManager.literal("remove")
                     .then(ClientCommandManager.argument("event", StringArgumentType.word())
-                        .then(ClientCommandManager.argument("id", IntegerArgumentType.integer())
+                        .then(ClientCommandManager.argument("id", IntegerArgumentType.integer(1))
                             .executes(PythemcioCommand::executeRemove))))
                 .then(ClientCommandManager.literal("list")
                     .executes(PythemcioCommand::executeList))
@@ -40,11 +41,18 @@ public class PythemcioCommand {
 
     private static int executeAdd(CommandContext<FabricClientCommandSource> context) {
         String event = StringArgumentType.getString(context, "event");
-        String command = StringArgumentType.getString(context, "command");
+        String command = StringArgumentType.getString(context, "command").trim();
 
         if (EventType.fromName(event) == null) {
             context.getSource().sendError(Component.literal(
-                "[PythemcIO] Unknown event: " + event + ". Use /pythemcio list to see valid events."
+                "[PythemcIO] Unknown event: '" + event + "'. Valid events: " + getValidEvents()
+            ));
+            return 0;
+        }
+
+        if (command.isEmpty()) {
+            context.getSource().sendError(Component.literal(
+                "[PythemcIO] Command cannot be empty."
             ));
             return 0;
         }
@@ -54,19 +62,16 @@ public class PythemcioCommand {
             context.getSource().sendError(Component.literal(
                 "[PythemcIO] Command blocked: " + validation.getMessage()
             ));
+            PythemcIO.LOGGER.warn("[PythemcIO] Blocked command: {} - {}", command, validation.getMessage());
             return 0;
         }
 
-        String[] commands = command.split("&&(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
-        for (int i = 0; i < commands.length; i++) {
-            commands[i] = commands[i].trim().replaceAll("^\"|\"$", "");
-        }
-
-        Trigger trigger = TriggerManager.addTrigger(event, commands);
+        Trigger trigger = TriggerManager.addTrigger(event, new String[]{command});
 
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Added trigger #" + trigger.getId() + ": " + event + " -> " + command
+            "[PythemcIO] + Trigger #" + trigger.getId() + ": [" + event + "] -> " + command
         ));
+        PythemcIO.LOGGER.info("[PythemcIO] Trigger added: #{} [{}] -> {}", trigger.getId(), event, command);
         return 1;
     }
 
@@ -74,13 +79,20 @@ public class PythemcioCommand {
         String event = StringArgumentType.getString(context, "event");
         int id = context.getArgument("id", Integer.class);
 
+        if (EventType.fromName(event) == null) {
+            context.getSource().sendError(Component.literal(
+                "[PythemcIO] Unknown event: '" + event + "'. Valid events: " + getValidEvents()
+            ));
+            return 0;
+        }
+
         if (TriggerManager.removeTrigger(event, id)) {
             context.getSource().sendFeedback(Component.literal(
-                "[PythemcIO] Removed trigger #" + id + " from " + event
+                "[PythemcIO] - Removed trigger #" + id + " from [" + event + "]"
             ));
         } else {
             context.getSource().sendError(Component.literal(
-                "[PythemcIO] Trigger #" + id + " not found for event " + event
+                "[PythemcIO] Trigger #" + id + " not found for event [" + event + "]"
             ));
             return 0;
         }
@@ -89,29 +101,36 @@ public class PythemcioCommand {
 
     private static int executeList(CommandContext<FabricClientCommandSource> context) {
         Map<String, List<Trigger>> all = TriggerManager.getAllTriggers();
+        String status = TriggerManager.isEnabled() ? "ENABLED" : "DISABLED";
+
+        context.getSource().sendFeedback(Component.literal(
+            "[PythemcIO] === PythemcIO Status: " + status + " ==="
+        ));
 
         if (all.isEmpty()) {
             context.getSource().sendFeedback(Component.literal(
                 "[PythemcIO] No triggers configured."
             ));
         } else {
-            context.getSource().sendFeedback(Component.literal(
-                "[PythemcIO] Active triggers:"
-            ));
+            int total = 0;
             for (Map.Entry<String, List<Trigger>> entry : all.entrySet()) {
                 for (Trigger trigger : entry.getValue()) {
                     context.getSource().sendFeedback(Component.literal(
                         "  #" + trigger.getId() + " [" + trigger.getEvent() + "] -> " + String.join(", ", trigger.getCommands())
                     ));
+                    total++;
                 }
             }
+            context.getSource().sendFeedback(Component.literal(
+                "[PythemcIO] Total: " + total + " trigger(s)"
+            ));
         }
 
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Status: " + (TriggerManager.isEnabled() ? "ENABLED" : "DISABLED")
+            "[PythemcIO] Events: " + getValidEvents()
         ));
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Valid events: dimension_change, health_change, food_change, armor_change, xp_change, redstone_signal, player_join, player_leave, item_pickup, item_drop, block_break, block_place, chat_message, time_change, death, respawn, sleep, wake_up"
+            "[PythemcIO] Usage: /pythemcio add <event> <command>"
         ));
         return 1;
     }
@@ -119,7 +138,7 @@ public class PythemcioCommand {
     private static int executeDisable(CommandContext<FabricClientCommandSource> context) {
         TriggerManager.setEnabled(false);
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Mod disabled. No triggers will fire."
+            "[PythemcIO] Disabled. No triggers will fire."
         ));
         return 1;
     }
@@ -127,8 +146,17 @@ public class PythemcioCommand {
     private static int executeEnable(CommandContext<FabricClientCommandSource> context) {
         TriggerManager.setEnabled(true);
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Mod enabled."
+            "[PythemcIO] Enabled."
         ));
         return 1;
+    }
+
+    private static String getValidEvents() {
+        StringBuilder sb = new StringBuilder();
+        for (EventType type : EventType.values()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(type.getName());
+        }
+        return sb.toString();
     }
 }

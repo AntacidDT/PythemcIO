@@ -4,7 +4,6 @@ import com.pythemcio.PythemcIO;
 import com.pythemcio.executor.CommandExecutor;
 import com.pythemcio.trigger.Trigger;
 import com.pythemcio.trigger.TriggerManager;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
@@ -45,8 +44,13 @@ public class EventRegistry {
         if (!TriggerManager.isEnabled()) return;
 
         List<Trigger> triggers = TriggerManager.getTriggersForEvent(eventType.getName());
+        if (triggers.isEmpty()) return;
+
+        PythemcIO.LOGGER.info("[PythemcIO] Event fired: {} ({} trigger(s))", eventType.getName(), triggers.size());
+
         for (Trigger trigger : triggers) {
             for (String command : trigger.getCommands()) {
+                PythemcIO.LOGGER.info("[PythemcIO] Executing: {}", command);
                 CommandExecutor.execute(command);
             }
         }
