@@ -55,7 +55,7 @@ public class GameActionHandler {
 
             mc.execute(() -> {
                 try {
-                    executeGameAction(actionType, resolved, mc);
+                    executeAction(actionType, resolved, mc);
                 } catch (Exception e) {
                     PythemcIO.LOGGER.error("[PythemcIO] Failed to execute game action: {}", resolved, e);
                 }
@@ -78,7 +78,7 @@ public class GameActionHandler {
         return "command";
     }
 
-    private static void executeGameAction(String type, String action, Minecraft mc) {
+    public static void executeAction(String type, String action, Minecraft mc) {
         if (mc.player == null) return;
 
         switch (type) {

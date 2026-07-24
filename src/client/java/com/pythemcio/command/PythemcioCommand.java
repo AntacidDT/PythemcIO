@@ -8,7 +8,7 @@ import com.pythemcio.event.EventType;
 import com.pythemcio.security.SecurityManager;
 import com.pythemcio.trigger.Trigger;
 import com.pythemcio.trigger.TriggerManager;
-import com.pythemcio.server.ApiServer;
+import com.pythemcio.server.FileWatcher;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
@@ -244,22 +244,22 @@ public class PythemcioCommand {
     private static int executeEnableAll(CommandContext<FabricClientCommandSource> context) {
         TriggerManager.setEnabledOutput(true);
         TriggerManager.setEnabledInput(true);
-        if (!ApiServer.isRunning()) {
-            ApiServer.start(FabricLoader.getInstance().getGameDir().resolve("config").resolve("pythemcio"));
+        if (!FileWatcher.isRunning()) {
+            FileWatcher.start(FabricLoader.getInstance().getGameDir().resolve("config").resolve("pythemcio"));
         }
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Enabled all triggers. API server started on http://127.0.0.1:" + ApiServer.getPort() + "/"
+            "[PythemcIO] Enabled all triggers. File watcher: " + FileWatcher.getInboxDir()
         ));
         return 1;
     }
 
     private static int executeEnableInput(CommandContext<FabricClientCommandSource> context) {
         TriggerManager.setEnabledInput(true);
-        if (!ApiServer.isRunning()) {
-            ApiServer.start(FabricLoader.getInstance().getGameDir().resolve("config").resolve("pythemcio"));
+        if (!FileWatcher.isRunning()) {
+            FileWatcher.start(FabricLoader.getInstance().getGameDir().resolve("config").resolve("pythemcio"));
         }
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Enabled input (OS->Game). API server started on http://127.0.0.1:" + ApiServer.getPort() + "/"
+            "[PythemcIO] Enabled input (OS->Game). Write files to: " + FileWatcher.getInboxDir()
         ));
         return 1;
     }
@@ -275,18 +275,18 @@ public class PythemcioCommand {
     private static int executeDisableAll(CommandContext<FabricClientCommandSource> context) {
         TriggerManager.setEnabledOutput(false);
         TriggerManager.setEnabledInput(false);
-        ApiServer.stop();
+        FileWatcher.stop();
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Disabled all triggers. API server stopped."
+            "[PythemcIO] Disabled all triggers. File watcher stopped."
         ));
         return 1;
     }
 
     private static int executeDisableInput(CommandContext<FabricClientCommandSource> context) {
         TriggerManager.setEnabledInput(false);
-        ApiServer.stop();
+        FileWatcher.stop();
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Disabled input (OS->Game). API server stopped."
+            "[PythemcIO] Disabled input (OS->Game). File watcher stopped."
         ));
         return 1;
     }
