@@ -8,9 +8,11 @@ import com.pythemcio.event.EventType;
 import com.pythemcio.security.SecurityManager;
 import com.pythemcio.trigger.Trigger;
 import com.pythemcio.trigger.TriggerManager;
+import com.pythemcio.server.ApiServer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
@@ -242,16 +244,22 @@ public class PythemcioCommand {
     private static int executeEnableAll(CommandContext<FabricClientCommandSource> context) {
         TriggerManager.setEnabledOutput(true);
         TriggerManager.setEnabledInput(true);
+        if (!ApiServer.isRunning()) {
+            ApiServer.start(FabricLoader.getInstance().getGameDir().resolve("config").resolve("pythemcio"));
+        }
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Enabled all triggers."
+            "[PythemcIO] Enabled all triggers. API server started on http://127.0.0.1:" + ApiServer.getPort() + "/"
         ));
         return 1;
     }
 
     private static int executeEnableInput(CommandContext<FabricClientCommandSource> context) {
         TriggerManager.setEnabledInput(true);
+        if (!ApiServer.isRunning()) {
+            ApiServer.start(FabricLoader.getInstance().getGameDir().resolve("config").resolve("pythemcio"));
+        }
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Enabled input (OS->Game) triggers."
+            "[PythemcIO] Enabled input (OS->Game). API server started on http://127.0.0.1:" + ApiServer.getPort() + "/"
         ));
         return 1;
     }
@@ -267,16 +275,18 @@ public class PythemcioCommand {
     private static int executeDisableAll(CommandContext<FabricClientCommandSource> context) {
         TriggerManager.setEnabledOutput(false);
         TriggerManager.setEnabledInput(false);
+        ApiServer.stop();
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Disabled all triggers."
+            "[PythemcIO] Disabled all triggers. API server stopped."
         ));
         return 1;
     }
 
     private static int executeDisableInput(CommandContext<FabricClientCommandSource> context) {
         TriggerManager.setEnabledInput(false);
+        ApiServer.stop();
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Disabled input (OS->Game) triggers."
+            "[PythemcIO] Disabled input (OS->Game). API server stopped."
         ));
         return 1;
     }
