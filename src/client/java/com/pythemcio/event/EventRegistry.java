@@ -64,13 +64,24 @@ public class EventRegistry {
             if (!trigger.matchesContext(context)) continue;
             matched++;
             for (String command : trigger.getCommands()) {
-                PythemcIO.LOGGER.info("[PythemcIO] Executing: {}", command);
-                CommandExecutor.execute(command);
+                String resolved = resolveVariables(command, eventName, context);
+                PythemcIO.LOGGER.info("[PythemcIO] Executing: {}", resolved);
+                CommandExecutor.execute(resolved);
             }
         }
 
         if (matched > 0) {
             PythemcIO.LOGGER.info("[PythemcIO] Event fired: {} ({} trigger(s) matched, context={})", eventName, matched, context);
         }
+    }
+
+    private static String resolveVariables(String command, String eventName, String context) {
+        if (context == null) context = "";
+        return command
+            .replace("$CONTEXT", context)
+            .replace("$EVENT", eventName)
+            .replace("$ITEM", context)
+            .replace("$BLOCK", context)
+            .replace("$ENTITY", context);
     }
 }
