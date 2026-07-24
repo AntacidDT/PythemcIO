@@ -18,7 +18,14 @@ public enum EventType {
     DEATH("death"),
     RESPAWN("respawn"),
     SLEEP("sleep"),
-    WAKE_UP("wake_up");
+    WAKE_UP("wake_up"),
+    PLAYER_ATTACK("player_attack"),
+    ON_FIRE("on_fire"),
+    IN_WATER("in_water"),
+    SPRINT("sprint"),
+    ELYTRA("elytra"),
+    SNEAK("sneak"),
+    USING_ITEM("using_item");
 
     private final String name;
 

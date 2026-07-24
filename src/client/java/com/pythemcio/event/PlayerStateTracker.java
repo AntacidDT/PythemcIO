@@ -4,8 +4,11 @@ import com.pythemcio.PythemcIO;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
 public class PlayerStateTracker {
 
@@ -18,6 +21,15 @@ public class PlayerStateTracker {
     private static boolean prevAlive = true;
     private static long prevDayTime = -1;
     private static boolean wasSleeping = false;
+    private static boolean prevOnFire = false;
+    private static boolean prevInWater = false;
+    private static boolean prevSprinting = false;
+    private static boolean prevFallFlying = false;
+    private static boolean prevSneaking = false;
+    private static boolean prevUsingItem = false;
+    private static int prevRedstonePower = -1;
+
+    private static int tickCounter = 0;
 
     public static void register() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -32,6 +44,17 @@ public class PlayerStateTracker {
             checkAlive(player);
             checkTime(client);
             checkSleep(player);
+            checkOnFire(player);
+            checkInWater(player);
+            checkSprint(player);
+            checkElytra(player);
+            checkSneak(player);
+            checkUsingItem(player);
+
+            tickCounter++;
+            if (tickCounter % 5 == 0) {
+                checkRedstone(client, player);
+            }
         });
 
         PythemcIO.LOGGER.info("[PythemcIO] Player state tracker initialized.");
@@ -77,7 +100,7 @@ public class PlayerStateTracker {
         int level = player.experienceLevel;
         float progress = player.experienceProgress;
         if (prevXpLevel >= 0 && (level != prevXpLevel || Float.compare(progress, prevXpProgress) != 0)) {
-            PythemcIO.LOGGER.info("[PythemcIO] XP changed: level {}->{}, progress {}->{}", prevXpLevel, level, prevXpProgress, progress);
+            PythemcIO.LOGGER.info("[PythemcIO] XP changed: level {}->{}", prevXpLevel, level);
             EventRegistry.fireEvent(EventType.XP_CHANGE);
         }
         prevXpLevel = level;
@@ -124,6 +147,102 @@ public class PlayerStateTracker {
         wasSleeping = sleeping;
     }
 
+    private static void checkOnFire(LocalPlayer player) {
+        boolean current = player.isOnFire();
+        if (!prevOnFire && current) {
+            PythemcIO.LOGGER.info("[PythemcIO] Player is on fire");
+            EventRegistry.fireEvent(EventType.ON_FIRE);
+        }
+        prevOnFire = current;
+    }
+
+    private static void checkInWater(LocalPlayer player) {
+        boolean current = player.isInWater();
+        if (!prevInWater && current) {
+            PythemcIO.LOGGER.info("[PythemcIO] Player entered water");
+            EventRegistry.fireEvent(EventType.IN_WATER);
+        } else if (prevInWater && !current) {
+            PythemcIO.LOGGER.info("[PythemcIO] Player left water");
+            EventRegistry.fireEvent(EventType.IN_WATER);
+        }
+        prevInWater = current;
+    }
+
+    private static void checkSprint(LocalPlayer player) {
+        boolean current = player.isSprinting();
+        if (!prevSprinting && current) {
+            PythemcIO.LOGGER.info("[PythemcIO] Player started sprinting");
+            EventRegistry.fireEvent(EventType.SPRINT);
+        } else if (prevSprinting && !current) {
+            PythemcIO.LOGGER.info("[PythemcIO] Player stopped sprinting");
+            EventRegistry.fireEvent(EventType.SPRINT);
+        }
+        prevSprinting = current;
+    }
+
+    private static void checkElytra(LocalPlayer player) {
+        boolean current = player.isFallFlying();
+        if (!prevFallFlying && current) {
+            PythemcIO.LOGGER.info("[PythemcIO] Player started elytra flight");
+            EventRegistry.fireEvent(EventType.ELYTRA);
+        } else if (prevFallFlying && !current) {
+            PythemcIO.LOGGER.info("[PythemcIO] Player stopped elytra flight");
+            EventRegistry.fireEvent(EventType.ELYTRA);
+        }
+        prevFallFlying = current;
+    }
+
+    private static void checkSneak(LocalPlayer player) {
+        boolean current = player.isShiftKeyDown();
+        if (!prevSneaking && current) {
+            PythemcIO.LOGGER.info("[PythemcIO] Player started sneaking");
+            EventRegistry.fireEvent(EventType.SNEAK);
+        } else if (prevSneaking && !current) {
+            PythemcIO.LOGGER.info("[PythemcIO] Player stopped sneaking");
+            EventRegistry.fireEvent(EventType.SNEAK);
+        }
+        prevSneaking = current;
+    }
+
+    private static void checkUsingItem(LocalPlayer player) {
+        boolean current = player.isUsingItem();
+        if (!prevUsingItem && current) {
+            PythemcIO.LOGGER.info("[PythemcIO] Player started using item");
+            EventRegistry.fireEvent(EventType.USING_ITEM);
+        } else if (prevUsingItem && !current) {
+            PythemcIO.LOGGER.info("[PythemcIO] Player stopped using item");
+            EventRegistry.fireEvent(EventType.USING_ITEM);
+        }
+        prevUsingItem = current;
+    }
+
+    private static void checkRedstone(Minecraft client, LocalPlayer player) {
+        if (client.level == null) return;
+        BlockPos playerPos = player.blockPosition();
+        int maxPower = 0;
+
+        for (int x = -4; x <= 4; x++) {
+            for (int y = -4; y <= 4; y++) {
+                for (int z = -4; z <= 4; z++) {
+                    BlockPos checkPos = playerPos.offset(x, y, z);
+                    BlockState state = client.level.getBlockState(checkPos);
+                    if (state.hasProperty(BlockStateProperties.POWER)) {
+                        int power = state.getValue(BlockStateProperties.POWER);
+                        if (power > maxPower) {
+                            maxPower = power;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (prevRedstonePower >= 0 && maxPower != prevRedstonePower && maxPower > 0) {
+            PythemcIO.LOGGER.info("[PythemcIO] Redstone signal detected: power {}", maxPower);
+            EventRegistry.fireEvent(EventType.REDSTONE_SIGNAL);
+        }
+        prevRedstonePower = maxPower;
+    }
+
     public static void reset() {
         prevHealth = -1f;
         prevFood = -1;
@@ -134,5 +253,13 @@ public class PlayerStateTracker {
         prevAlive = true;
         prevDayTime = -1;
         wasSleeping = false;
+        prevOnFire = false;
+        prevInWater = false;
+        prevSprinting = false;
+        prevFallFlying = false;
+        prevSneaking = false;
+        prevUsingItem = false;
+        prevRedstonePower = -1;
+        tickCounter = 0;
     }
 }

@@ -7,6 +7,7 @@ import com.pythemcio.trigger.TriggerManager;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.world.InteractionResult;
 
@@ -34,6 +35,11 @@ public class EventRegistry {
 
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             fireEvent(EventType.BLOCK_PLACE);
+            return InteractionResult.PASS;
+        });
+
+        AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            fireEvent(EventType.PLAYER_ATTACK);
             return InteractionResult.PASS;
         });
 
