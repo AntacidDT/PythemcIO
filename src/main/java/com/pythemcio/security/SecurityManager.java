@@ -8,43 +8,31 @@ public class SecurityManager {
 
     private static final List<String> BLOCKED_COMMANDS = Arrays.asList(
         "rm", "rmdir", "del", "erase",
-        "touch", "mkdir", "rmdir",
-        "nano", "vim", "vi", "emacs", "ed",
-        "mv", "rename",
-        "cp", "copy", "xcopy",
         "dd", "format", "mkfs",
         "chmod", "chown", "chgrp",
         "sudo", "su", "passwd",
-        "apt", "apt-get", "yum", "dnf", "pacman", "brew", "snap",
-        "pip", "pip3", "npm", "yarn", "cargo",
-        "bash", "sh", "zsh", "fish", "csh", "ksh",
-        "powershell", "pwsh", "cmd",
-        "eval", "exec",
+        "kill", "killall", "pkill", "halt", "shutdown", "reboot",
         "systemctl", "service",
         "mount", "umount", "fdisk", "parted",
-        "kill", "killall", "pkill", "halt", "shutdown", "reboot",
-        "crontab", "at"
+        "crontab", "at",
+        "curl", "wget",
+        "powershell", "pwsh"
     );
 
     private static final List<String> BLOCKED_FLAGS = Arrays.asList(
         "--no-preserve-root",
-        "-rf", "-fr", "-r", "-R",
-        "-f",
+        "-rf", "-fr",
         "--force",
-        "-recursive",
         "--recursive"
     );
 
     private static final List<String> BLOCKED_PATTERNS = Arrays.asList(
-        "&&", "||", "|", ";", ">", ">>", "<", "<<",
-        "`", "$(",
         "rm -", "rmdir -",
         "sudo ", "su -",
         "chmod ", "chown ",
         "dd if=", "dd of=",
         "> /dev/", "< /dev/",
-        "/etc/passwd", "/etc/shadow",
-        "/bin/", "/sbin/", "/usr/bin/"
+        "/etc/passwd", "/etc/shadow"
     );
 
     public static ValidationResult validate(String command) {
@@ -54,10 +42,11 @@ public class SecurityManager {
 
         String lower = command.toLowerCase().trim();
 
-        for (String blocked : BLOCKED_COMMANDS) {
-            String[] tokens = lower.split("\\s+");
-            for (String token : tokens) {
-                if (token.equals(blocked) || token.equals(blocked + ";") || token.equals(blocked + "&")) {
+        String[] tokens = lower.split("\\s+");
+        for (String token : tokens) {
+            String clean = token.replaceAll("[;&|`$]", "");
+            for (String blocked : BLOCKED_COMMANDS) {
+                if (clean.equals(blocked)) {
                     return new ValidationResult(false, "Blocked command: " + blocked);
                 }
             }
