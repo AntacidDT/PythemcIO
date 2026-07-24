@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TriggerManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Map<String, List<Trigger>> TRIGGERS = new ConcurrentHashMap<>();
-    private static final Map<String, Trigger> INPUT_TRIGGERS = new ConcurrentHashMap<>();
+    private static final List<Trigger> SCRIPT_TRIGGERS = new ArrayList<>();
     private static int nextId = 1;
     private static boolean enabledOutput = true;
     private static boolean enabledInput = false;
@@ -36,7 +36,7 @@ public class TriggerManager {
     public static Trigger addTrigger(String event, String argument, String[] commands, String direction) {
         if ("i".equals(direction)) {
             Trigger trigger = new Trigger(nextId++, event, argument, commands, direction);
-            INPUT_TRIGGERS.put(event, trigger);
+            SCRIPT_TRIGGERS.add(trigger);
             save();
             return trigger;
         }
@@ -47,14 +47,27 @@ public class TriggerManager {
         return trigger;
     }
 
+    public static Trigger addScriptTrigger(String expectedOutput, String scriptPath, String gameAction) {
+        Trigger trigger = Trigger.createScriptTrigger(nextId++, expectedOutput, scriptPath, gameAction);
+        SCRIPT_TRIGGERS.add(trigger);
+        save();
+        return trigger;
+    }
+
     public static boolean removeTrigger(String event, int id) {
         List<Trigger> eventTriggers = TRIGGERS.get(event);
-        if (eventTriggers == null) return false;
-
-        boolean removed = eventTriggers.removeIf(t -> t.getId() == id);
-        if (eventTriggers.isEmpty()) {
-            TRIGGERS.remove(event);
+        if (eventTriggers != null) {
+            boolean removed = eventTriggers.removeIf(t -> t.getId() == id);
+            if (eventTriggers.isEmpty()) {
+                TRIGGERS.remove(event);
+            }
+            if (removed) {
+                save();
+                return true;
+            }
         }
+
+        boolean removed = SCRIPT_TRIGGERS.removeIf(t -> t.getId() == id);
         if (removed) save();
         return removed;
     }
@@ -63,12 +76,8 @@ public class TriggerManager {
         return TRIGGERS.getOrDefault(event, Collections.emptyList());
     }
 
-    public static Trigger getInputTrigger(String event) {
-        return INPUT_TRIGGERS.get(event);
-    }
-
-    public static Map<String, Trigger> getAllInputTriggers() {
-        return Collections.unmodifiableMap(INPUT_TRIGGERS);
+    public static List<Trigger> getScriptTriggers() {
+        return Collections.unmodifiableList(SCRIPT_TRIGGERS);
     }
 
     public static Map<String, List<Trigger>> getAllTriggers() {
@@ -95,7 +104,7 @@ public class TriggerManager {
 
     public static void clearAll() {
         TRIGGERS.clear();
-        INPUT_TRIGGERS.clear();
+        SCRIPT_TRIGGERS.clear();
         nextId = 1;
         save();
     }
@@ -109,20 +118,19 @@ public class TriggerManager {
             data.addProperty("enabledOutput", enabledOutput);
             data.addProperty("enabledInput", enabledInput);
             data.add("triggers", GSON.toJsonTree(TRIGGERS));
-            data.add("inputTriggers", GSON.toJsonTree(INPUT_TRIGGERS));
+            data.add("scriptTriggers", GSON.toJsonTree(SCRIPT_TRIGGERS));
             GSON.toJson(data, writer);
         } catch (IOException e) {
             PythemcIO.LOGGER.error("[PythemcIO] Failed to save triggers", e);
         }
     }
 
-    @SuppressWarnings("unchecked")
     private static void load() {
         if (configDir == null) return;
         Path file = configDir.resolve("triggers.json");
         if (!Files.exists(file)) return;
 
-        try (Reader reader = Files.newBufferedReader(file)) {
+        try (BufferedReader reader = Files.newBufferedReader(file)) {
             JsonObject data = JsonParser.parseReader(reader).getAsJsonObject();
             if (data == null) return;
 
@@ -144,13 +152,13 @@ public class TriggerManager {
                     TRIGGERS.putAll(loaded);
                 }
             }
-            if (data.has("inputTriggers")) {
-                Map<String, Trigger> loaded = GSON.fromJson(
-                    data.get("inputTriggers"),
-                    new TypeToken<Map<String, Trigger>>() {}.getType()
+            if (data.has("scriptTriggers")) {
+                List<Trigger> loaded = GSON.fromJson(
+                    data.get("scriptTriggers"),
+                    new TypeToken<List<Trigger>>() {}.getType()
                 );
                 if (loaded != null) {
-                    INPUT_TRIGGERS.putAll(loaded);
+                    SCRIPT_TRIGGERS.addAll(loaded);
                 }
             }
         } catch (Exception e) {
