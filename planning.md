@@ -16,25 +16,78 @@ if player goes into the nether, the OS should run
 Security measures:
 1. Must run completely on client side; no server host
 should be able to run commands on someone elses PC.
-2. Parser may not allow file/directory editing commands
-    (touch, nano, etc), no disk formatters (dd, format), 
-    no package managers, no recursive actions, no 
-    chaining or pipes (&&, | etc). If a script is ran,
-    that script must be checked and libraries like
-    shutil or os may not be allowed. Powershell may 
-    NEVER be used. No permission changing commands should
-    be ran. If detected, immediatly fail the process.
-    Pythemc IO mod must always run in the same 
-    user priviliges and sudo should not be allowed.
-    --no-preserve-root must also be blocked and anything
-    recursive or destructive.
+2. The parser strips all non-alphanumeric characters
+(quotes, backticks, dollar signs, semicolons, pipes, etc.)
+and replaces them with spaces before checking, so bypasses
+like sh -c "sudo rm -rf /" are caught.
+
+Blocked commands:
+- Destructive: rm, rmdir, del, erase, dd, format, mkfs
+- Permission: chmod, chown, chgrp, sudo, su, passwd
+- Process: kill, killall, pkill, halt, shutdown, reboot
+- System: systemctl, service, crontab, at, mount, umount, fdisk, parted
+- Network: curl, wget (prevents downloading arbitrary content)
+- Shell: powershell, pwsh (too powerful, .NET access)
+
+Blocked flags:
+- --no-preserve-root, -rf, -fr, --force, --recursive
+
+Blocked patterns (substring check on full command):
+- rm -, rmdir -, sudo , su -, chmod , chown
+- dd if=, dd of=, > /dev/, < /dev/
+- /etc/passwd, /etc/shadow
+
+NOT blocked (safe to use):
+- bash, sh, zsh, cmd (just shells, the command inside is what matters)
+- pip, npm, cargo, yarn (package managers, constantly scanned for malware)
+- Pipes and chaining (|, &&, ;) — the individual commands are still checked
+
+If detected, immediately fail the process.
+Pythemc IO mod must always run in the same 
+user privileges.
+
 3. Pythemc IO mod should be allowed to be completely
-    disabled through a command or F5 + P
+disabled through /pythemcio disable (re-enable with /pythemcio enable)
+
+Command syntax:
+/pythemcio add <event> <command>                    → fires for all occurrences
+/pythemcio add <event> filter <argument> <command>  → fires only when filter matches
+/pythemcio remove <event> <id>                      → remove a trigger by ID
+/pythemcio list                                     → list all triggers
+/pythemcio clear                                    → remove all triggers
+/pythemcio disable                                  → disable all triggers
+/pythemcio enable                                   → enable all triggers
+/pythemcio help                                     → show help
+
+Variable substitution in commands:
+$CONTEXT — the context string (item/block/entity name, message text)
+$EVENT — the event name
+$ITEM — alias for $CONTEXT
+$BLOCK — alias for $CONTEXT
+$ENTITY — alias for $CONTEXT
+
+Filterable events (7):
+- using_item [item]     → context: item name (e.g. minecraft:bow)
+- item_pickup [item]    → context: item name
+- item_drop [item]      → context: item name
+- block_break [block]   → context: block name (e.g. minecraft:diamond_ore)
+- block_place [block]   → context: block name
+- player_attack [entity] → context: entity type (e.g. minecraft:creeper)
+- chat_message [keyword] → context: message text
+
+Non-filterable events (18):
+player_join, player_leave, dimension_change, health_change,
+food_change, armor_change, xp_change, death, respawn,
+sleep, wake_up, time_change, on_fire, in_water, sprint,
+elytra, sneak, redstone_signal
+
+Cooldown: 3 second debounce per command to prevent spam
+from rapid-fire events (health regen, food, etc.)
 
 Design measures;
-1. we should use commands (in MC). Later we can add GUI 
-but early should be ingame commands based. Something like
-"/pythemcio run "python3 file.py" if player.dimension = Nether"
-that command is specifically done ingame. 
-2. The parser CHECKS the command written, and only can allow
-execution if the command agrees with Security measure Nr. 2 
+1. Commands are registered in-game via /pythemcio. 
+2. The parser CHECKS the command written using the security
+measures above. All non-alphanumeric characters are stripped
+before validation to prevent bypass attacks.
+3. Triggers persist to config/pythemcio/triggers.json
+via Gson, surviving game restarts.
