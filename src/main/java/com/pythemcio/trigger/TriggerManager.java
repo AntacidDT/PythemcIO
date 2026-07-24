@@ -65,6 +65,12 @@ public class TriggerManager {
         enabled = state;
     }
 
+    public static void clearAll() {
+        TRIGGERS.clear();
+        nextId = 1;
+        save();
+    }
+
     private static void save() {
         if (configDir == null) return;
         Path file = configDir.resolve("triggers.json");

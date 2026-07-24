@@ -6,11 +6,21 @@ import com.pythemcio.security.SecurityManager;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CommandExecutor {
 
+    private static final ConcurrentHashMap<String, Long> lastExecutions = new ConcurrentHashMap<>();
+    private static final long COOLDOWN_MS = 3000;
+
     public static void execute(String command) {
         CompletableFuture.runAsync(() -> {
+            Long lastTime = lastExecutions.get(command);
+            if (lastTime != null && System.currentTimeMillis() - lastTime < COOLDOWN_MS) {
+                return;
+            }
+            lastExecutions.put(command, System.currentTimeMillis());
+
             SecurityManager.ValidationResult result = SecurityManager.validate(command);
             if (!result.isValid()) {
                 PythemcIO.LOGGER.warn("[PythemcIO] Command blocked: {} - {}", command, result.getMessage());
