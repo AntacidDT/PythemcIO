@@ -2,7 +2,6 @@ package com.pythemcio.security;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class SecurityManager {
 
@@ -42,11 +41,13 @@ public class SecurityManager {
 
         String lower = command.toLowerCase().trim();
 
-        String[] tokens = lower.split("\\s+");
-        for (String token : tokens) {
-            String clean = token.replaceAll("[;&|`$]", "");
+        String stripped = lower.replaceAll("[^a-z0-9 \\-/.]", " ");
+
+        String[] words = stripped.split("\\s+");
+        for (String word : words) {
+            if (word.isEmpty()) continue;
             for (String blocked : BLOCKED_COMMANDS) {
-                if (clean.equals(blocked)) {
+                if (word.equals(blocked)) {
                     return new ValidationResult(false, "Blocked command: " + blocked);
                 }
             }
@@ -62,18 +63,6 @@ public class SecurityManager {
             if (lower.contains(pattern)) {
                 return new ValidationResult(false, "Blocked pattern: " + pattern);
             }
-        }
-
-        if (lower.matches(".*\\brm\\b.*")) {
-            return new ValidationResult(false, "rm command detected");
-        }
-
-        if (lower.matches(".*\\bsudo\\b.*")) {
-            return new ValidationResult(false, "sudo command detected");
-        }
-
-        if (lower.matches(".*--no-preserve-root.*")) {
-            return new ValidationResult(false, "--no-preserve-root detected");
         }
 
         return new ValidationResult(true, "Command is safe");
