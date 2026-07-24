@@ -17,48 +17,60 @@ public class EventRegistry {
 
     public static void register() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            fireEvent(EventType.PLAYER_JOIN);
+            fireEvent(EventType.PLAYER_JOIN, null);
         });
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            fireEvent(EventType.PLAYER_LEAVE);
+            fireEvent(EventType.PLAYER_LEAVE, null);
         });
 
         ClientSendMessageEvents.CHAT.register((message) -> {
-            fireEvent(EventType.CHAT_MESSAGE);
+            fireEvent(EventType.CHAT_MESSAGE, message);
         });
 
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
-            fireEvent(EventType.BLOCK_BREAK);
+            String blockName = world.getBlockState(pos).getBlock().builtInRegistryHolder().key().location().toString();
+            fireEvent(EventType.BLOCK_BREAK, blockName);
             return InteractionResult.PASS;
         });
 
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
-            fireEvent(EventType.BLOCK_PLACE);
+            String blockName = world.getBlockState(hitResult.getBlockPos()).getBlock().builtInRegistryHolder().key().location().toString();
+            fireEvent(EventType.BLOCK_PLACE, blockName);
             return InteractionResult.PASS;
         });
 
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            fireEvent(EventType.PLAYER_ATTACK);
+            String entityName = entity.getType().builtInRegistryHolder().key().location().toString();
+            fireEvent(EventType.PLAYER_ATTACK, entityName);
             return InteractionResult.PASS;
         });
 
         PythemcIO.LOGGER.info("[PythemcIO] Event registry initialized.");
     }
 
-    public static void fireEvent(EventType eventType) {
+    public static void fireEvent(EventType eventType, String context) {
+        fireEvent(eventType.getName(), context);
+    }
+
+    public static void fireEvent(String eventName, String context) {
         if (!TriggerManager.isEnabled()) return;
 
-        List<Trigger> triggers = TriggerManager.getTriggersForEvent(eventType.getName());
+        List<Trigger> triggers = TriggerManager.getTriggersForEvent(eventName);
         if (triggers.isEmpty()) return;
 
-        PythemcIO.LOGGER.info("[PythemcIO] Event fired: {} ({} trigger(s))", eventType.getName(), triggers.size());
-
+        int matched = 0;
         for (Trigger trigger : triggers) {
+            if (!trigger.matchesContext(context)) continue;
+            matched++;
             for (String command : trigger.getCommands()) {
                 PythemcIO.LOGGER.info("[PythemcIO] Executing: {}", command);
                 CommandExecutor.execute(command);
             }
+        }
+
+        if (matched > 0) {
+            PythemcIO.LOGGER.info("[PythemcIO] Event fired: {} ({} trigger(s) matched, context={})", eventName, matched, context);
         }
     }
 }

@@ -63,8 +63,9 @@ public class PlayerStateTracker {
     private static void checkDimension(LocalPlayer player) {
         ResourceKey<Level> current = player.level().dimension();
         if (prevDimension != null && current != prevDimension) {
-            PythemcIO.LOGGER.info("[PythemcIO] Dimension changed: {} -> {}", prevDimension.location(), current.location());
-            EventRegistry.fireEvent(EventType.DIMENSION_CHANGE);
+            String dimName = current.location().toString();
+            PythemcIO.LOGGER.info("[PythemcIO] Dimension changed: {} -> {}", prevDimension.location(), dimName);
+            EventRegistry.fireEvent(EventType.DIMENSION_CHANGE, dimName);
         }
         prevDimension = current;
     }
@@ -73,7 +74,7 @@ public class PlayerStateTracker {
         float current = player.getHealth();
         if (prevHealth >= 0 && Float.compare(current, prevHealth) != 0) {
             PythemcIO.LOGGER.info("[PythemcIO] Health changed: {} -> {}", prevHealth, current);
-            EventRegistry.fireEvent(EventType.HEALTH_CHANGE);
+            EventRegistry.fireEvent(EventType.HEALTH_CHANGE, null);
         }
         prevHealth = current;
     }
@@ -82,7 +83,7 @@ public class PlayerStateTracker {
         int current = player.getFoodData().getFoodLevel();
         if (prevFood >= 0 && current != prevFood) {
             PythemcIO.LOGGER.info("[PythemcIO] Food changed: {} -> {}", prevFood, current);
-            EventRegistry.fireEvent(EventType.FOOD_CHANGE);
+            EventRegistry.fireEvent(EventType.FOOD_CHANGE, null);
         }
         prevFood = current;
     }
@@ -91,7 +92,7 @@ public class PlayerStateTracker {
         int current = player.getArmorValue();
         if (prevArmor >= 0 && current != prevArmor) {
             PythemcIO.LOGGER.info("[PythemcIO] Armor changed: {} -> {}", prevArmor, current);
-            EventRegistry.fireEvent(EventType.ARMOR_CHANGE);
+            EventRegistry.fireEvent(EventType.ARMOR_CHANGE, null);
         }
         prevArmor = current;
     }
@@ -101,7 +102,7 @@ public class PlayerStateTracker {
         float progress = player.experienceProgress;
         if (prevXpLevel >= 0 && (level != prevXpLevel || Float.compare(progress, prevXpProgress) != 0)) {
             PythemcIO.LOGGER.info("[PythemcIO] XP changed: level {}->{}", prevXpLevel, level);
-            EventRegistry.fireEvent(EventType.XP_CHANGE);
+            EventRegistry.fireEvent(EventType.XP_CHANGE, null);
         }
         prevXpLevel = level;
         prevXpProgress = progress;
@@ -111,10 +112,10 @@ public class PlayerStateTracker {
         boolean alive = !player.isDeadOrDying();
         if (prevAlive && !alive) {
             PythemcIO.LOGGER.info("[PythemcIO] Player died");
-            EventRegistry.fireEvent(EventType.DEATH);
+            EventRegistry.fireEvent(EventType.DEATH, null);
         } else if (!prevAlive && alive) {
             PythemcIO.LOGGER.info("[PythemcIO] Player respawned");
-            EventRegistry.fireEvent(EventType.RESPAWN);
+            EventRegistry.fireEvent(EventType.RESPAWN, null);
         }
         prevAlive = alive;
     }
@@ -128,8 +129,9 @@ public class PlayerStateTracker {
             boolean wasDay = prevPhase < 12000;
             boolean isDay = currPhase < 12000;
             if (wasDay != isDay) {
-                PythemcIO.LOGGER.info("[PythemcIO] Time changed: {} -> {}", wasDay ? "day" : "night", isDay ? "day" : "night");
-                EventRegistry.fireEvent(EventType.TIME_CHANGE);
+                String timeName = isDay ? "day" : "night";
+                PythemcIO.LOGGER.info("[PythemcIO] Time changed: {} -> {}", wasDay ? "day" : "night", timeName);
+                EventRegistry.fireEvent(EventType.TIME_CHANGE, timeName);
             }
         }
         prevDayTime = currentTime;
@@ -139,10 +141,10 @@ public class PlayerStateTracker {
         boolean sleeping = player.isSleeping();
         if (!wasSleeping && sleeping) {
             PythemcIO.LOGGER.info("[PythemcIO] Player started sleeping");
-            EventRegistry.fireEvent(EventType.SLEEP);
+            EventRegistry.fireEvent(EventType.SLEEP, null);
         } else if (wasSleeping && !sleeping) {
             PythemcIO.LOGGER.info("[PythemcIO] Player woke up");
-            EventRegistry.fireEvent(EventType.WAKE_UP);
+            EventRegistry.fireEvent(EventType.WAKE_UP, null);
         }
         wasSleeping = sleeping;
     }
@@ -151,7 +153,7 @@ public class PlayerStateTracker {
         boolean current = player.isOnFire();
         if (!prevOnFire && current) {
             PythemcIO.LOGGER.info("[PythemcIO] Player is on fire");
-            EventRegistry.fireEvent(EventType.ON_FIRE);
+            EventRegistry.fireEvent(EventType.ON_FIRE, null);
         }
         prevOnFire = current;
     }
@@ -160,10 +162,10 @@ public class PlayerStateTracker {
         boolean current = player.isInWater();
         if (!prevInWater && current) {
             PythemcIO.LOGGER.info("[PythemcIO] Player entered water");
-            EventRegistry.fireEvent(EventType.IN_WATER);
+            EventRegistry.fireEvent(EventType.IN_WATER, null);
         } else if (prevInWater && !current) {
             PythemcIO.LOGGER.info("[PythemcIO] Player left water");
-            EventRegistry.fireEvent(EventType.IN_WATER);
+            EventRegistry.fireEvent(EventType.IN_WATER, null);
         }
         prevInWater = current;
     }
@@ -172,10 +174,10 @@ public class PlayerStateTracker {
         boolean current = player.isSprinting();
         if (!prevSprinting && current) {
             PythemcIO.LOGGER.info("[PythemcIO] Player started sprinting");
-            EventRegistry.fireEvent(EventType.SPRINT);
+            EventRegistry.fireEvent(EventType.SPRINT, null);
         } else if (prevSprinting && !current) {
             PythemcIO.LOGGER.info("[PythemcIO] Player stopped sprinting");
-            EventRegistry.fireEvent(EventType.SPRINT);
+            EventRegistry.fireEvent(EventType.SPRINT, null);
         }
         prevSprinting = current;
     }
@@ -184,10 +186,10 @@ public class PlayerStateTracker {
         boolean current = player.isFallFlying();
         if (!prevFallFlying && current) {
             PythemcIO.LOGGER.info("[PythemcIO] Player started elytra flight");
-            EventRegistry.fireEvent(EventType.ELYTRA);
+            EventRegistry.fireEvent(EventType.ELYTRA, null);
         } else if (prevFallFlying && !current) {
             PythemcIO.LOGGER.info("[PythemcIO] Player stopped elytra flight");
-            EventRegistry.fireEvent(EventType.ELYTRA);
+            EventRegistry.fireEvent(EventType.ELYTRA, null);
         }
         prevFallFlying = current;
     }
@@ -196,10 +198,10 @@ public class PlayerStateTracker {
         boolean current = player.isShiftKeyDown();
         if (!prevSneaking && current) {
             PythemcIO.LOGGER.info("[PythemcIO] Player started sneaking");
-            EventRegistry.fireEvent(EventType.SNEAK);
+            EventRegistry.fireEvent(EventType.SNEAK, null);
         } else if (prevSneaking && !current) {
             PythemcIO.LOGGER.info("[PythemcIO] Player stopped sneaking");
-            EventRegistry.fireEvent(EventType.SNEAK);
+            EventRegistry.fireEvent(EventType.SNEAK, null);
         }
         prevSneaking = current;
     }
@@ -207,11 +209,12 @@ public class PlayerStateTracker {
     private static void checkUsingItem(LocalPlayer player) {
         boolean current = player.isUsingItem();
         if (!prevUsingItem && current) {
-            PythemcIO.LOGGER.info("[PythemcIO] Player started using item");
-            EventRegistry.fireEvent(EventType.USING_ITEM);
+            String itemName = player.getUseItem().getItem().builtInRegistryHolder().key().location().toString();
+            PythemcIO.LOGGER.info("[PythemcIO] Player started using item: {}", itemName);
+            EventRegistry.fireEvent(EventType.USING_ITEM, itemName);
         } else if (prevUsingItem && !current) {
             PythemcIO.LOGGER.info("[PythemcIO] Player stopped using item");
-            EventRegistry.fireEvent(EventType.USING_ITEM);
+            EventRegistry.fireEvent(EventType.USING_ITEM, null);
         }
         prevUsingItem = current;
     }
@@ -238,7 +241,7 @@ public class PlayerStateTracker {
 
         if (prevRedstonePower >= 0 && maxPower != prevRedstonePower && maxPower > 0) {
             PythemcIO.LOGGER.info("[PythemcIO] Redstone signal detected: power {}", maxPower);
-            EventRegistry.fireEvent(EventType.REDSTONE_SIGNAL);
+            EventRegistry.fireEvent(EventType.REDSTONE_SIGNAL, String.valueOf(maxPower));
         }
         prevRedstonePower = maxPower;
     }

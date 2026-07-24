@@ -15,7 +15,8 @@ public class InventoryMixin {
     @Inject(method = "add(Lnet/minecraft/world/item/ItemStack;)Z", at = @At("RETURN"))
     private void onItemAdded(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValue() && !stack.isEmpty()) {
-            EventRegistry.fireEvent(EventType.ITEM_PICKUP);
+            String itemName = stack.getItem().builtInRegistryHolder().key().location().toString();
+            EventRegistry.fireEvent(EventType.ITEM_PICKUP, itemName);
         }
     }
 }

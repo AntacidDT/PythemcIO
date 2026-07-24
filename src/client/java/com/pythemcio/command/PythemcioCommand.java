@@ -15,8 +15,15 @@ import net.minecraft.network.chat.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class PythemcioCommand {
+
+    private static final Set<String> FILTERABLE_EVENTS = Set.of(
+        "using_item", "item_pickup", "item_drop",
+        "block_break", "block_place",
+        "player_attack", "chat_message"
+    );
 
     public static void register() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
@@ -26,7 +33,11 @@ public class PythemcioCommand {
                 .then(ClientCommandManager.literal("add")
                     .then(ClientCommandManager.argument("event", StringArgumentType.word())
                         .then(ClientCommandManager.argument("command", StringArgumentType.greedyString())
-                            .executes(PythemcioCommand::executeAdd))))
+                            .executes(ctx -> executeAdd(ctx, null)))
+                        .then(ClientCommandManager.literal("filter")
+                            .then(ClientCommandManager.argument("argument", StringArgumentType.word())
+                                .then(ClientCommandManager.argument("command", StringArgumentType.greedyString())
+                                    .executes(PythemcioCommand::executeAddFiltered))))))
                 .then(ClientCommandManager.literal("remove")
                     .then(ClientCommandManager.argument("event", StringArgumentType.word())
                         .then(ClientCommandManager.argument("id", IntegerArgumentType.integer(1))
@@ -48,36 +59,39 @@ public class PythemcioCommand {
             "[PythemcIO] === PythemcIO Help ==="
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio add <event> <command>  - Add a trigger"
+            "  /pythemcio add <event> <command>             - Add a trigger"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio remove <event> <id>    - Remove a trigger by ID"
+            "  /pythemcio add <event> filter <arg> <command> - Add a filtered trigger"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio list                   - List all triggers"
+            "  /pythemcio remove <event> <id>               - Remove a trigger by ID"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio clear                  - Remove all triggers"
+            "  /pythemcio list                              - List all triggers"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio disable                - Disable all triggers"
+            "  /pythemcio clear                             - Remove all triggers"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio enable                 - Enable all triggers"
+            "  /pythemcio disable                           - Disable all triggers"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio help                   - Show this help"
+            "  /pythemcio enable                            - Enable all triggers"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Example: /pythemcio add player_join python3 /path/to/script.py"
+            "  /pythemcio help                              - Show this help"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Tip: Don't use quotes around the command. Use: command arg1 arg2"
+            "[PythemcIO] Filterable events: " + String.join(", ", FILTERABLE_EVENTS)
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "[PythemcIO] Example: /pythemcio add using_item filter bow python3 /path/to/script.py"
         ));
         return 1;
     }
 
-    private static int executeAdd(CommandContext<FabricClientCommandSource> context) {
+    private static int executeAdd(CommandContext<FabricClientCommandSource> context, String argument) {
         String event = StringArgumentType.getString(context, "event");
         String command = StringArgumentType.getString(context, "command").trim();
 
@@ -104,12 +118,60 @@ public class PythemcioCommand {
             return 0;
         }
 
-        Trigger trigger = TriggerManager.addTrigger(event, new String[]{command});
+        Trigger trigger = TriggerManager.addTrigger(event, argument, new String[]{command});
+
+        String argStr = (argument != null) ? " (filter: " + argument + ")" : "";
+        context.getSource().sendFeedback(Component.literal(
+            "[PythemcIO] + Trigger #" + trigger.getId() + ": [" + event + "]" + argStr + " -> " + command
+        ));
+        PythemcIO.LOGGER.info("[PythemcIO] Trigger added: #{} [{}]{} -> {}", trigger.getId(), event, argStr, command);
+        return 1;
+    }
+
+    private static int executeAddFiltered(CommandContext<FabricClientCommandSource> context) {
+        String event = StringArgumentType.getString(context, "event");
+        String argument = StringArgumentType.getString(context, "argument").trim();
+        String command = StringArgumentType.getString(context, "command").trim();
+
+        if (EventType.fromName(event) == null) {
+            context.getSource().sendError(Component.literal(
+                "[PythemcIO] Unknown event: '" + event + "'. Use /pythemcio help"
+            ));
+            return 0;
+        }
+
+        if (!FILTERABLE_EVENTS.contains(event)) {
+            context.getSource().sendError(Component.literal(
+                "[PythemcIO] Event '" + event + "' does not support filtering."
+            ));
+            context.getSource().sendError(Component.literal(
+                "[PythemcIO] Filterable events: " + String.join(", ", FILTERABLE_EVENTS)
+            ));
+            return 0;
+        }
+
+        if (command.isEmpty()) {
+            context.getSource().sendError(Component.literal(
+                "[PythemcIO] Command cannot be empty."
+            ));
+            return 0;
+        }
+
+        SecurityManager.ValidationResult validation = SecurityManager.validate(command);
+        if (!validation.isValid()) {
+            context.getSource().sendError(Component.literal(
+                "[PythemcIO] Command blocked: " + validation.getMessage()
+            ));
+            PythemcIO.LOGGER.warn("[PythemcIO] Blocked command: {} - {}", command, validation.getMessage());
+            return 0;
+        }
+
+        Trigger trigger = TriggerManager.addTrigger(event, argument, new String[]{command});
 
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] + Trigger #" + trigger.getId() + ": [" + event + "] -> " + command
+            "[PythemcIO] + Trigger #" + trigger.getId() + ": [" + event + "] (filter: " + argument + ") -> " + command
         ));
-        PythemcIO.LOGGER.info("[PythemcIO] Trigger added: #{} [{}] -> {}", trigger.getId(), event, command);
+        PythemcIO.LOGGER.info("[PythemcIO] Trigger added: #{} [{}] (filter: {}) -> {}", trigger.getId(), event, argument, command);
         return 1;
     }
 
@@ -153,8 +215,9 @@ public class PythemcioCommand {
             int total = 0;
             for (Map.Entry<String, List<Trigger>> entry : all.entrySet()) {
                 for (Trigger trigger : entry.getValue()) {
+                    String argStr = trigger.hasArgument() ? " (filter: " + trigger.getArgument() + ")" : "";
                     context.getSource().sendFeedback(Component.literal(
-                        "  #" + trigger.getId() + " [" + trigger.getEvent() + "] -> " + String.join(", ", trigger.getCommands())
+                        "  #" + trigger.getId() + " [" + trigger.getEvent() + "]" + argStr + " -> " + String.join(", ", trigger.getCommands())
                     ));
                     total++;
                 }
@@ -195,14 +258,5 @@ public class PythemcioCommand {
             "[PythemcIO] Enabled."
         ));
         return 1;
-    }
-
-    private static String getValidEvents() {
-        StringBuilder sb = new StringBuilder();
-        for (EventType type : EventType.values()) {
-            if (sb.length() > 0) sb.append(", ");
-            sb.append(type.getName());
-        }
-        return sb.toString();
     }
 }

@@ -29,9 +29,9 @@ public class TriggerManager {
         load();
     }
 
-    public static Trigger addTrigger(String event, String[] commands) {
+    public static Trigger addTrigger(String event, String argument, String[] commands) {
         List<Trigger> eventTriggers = TRIGGERS.computeIfAbsent(event, k -> new ArrayList<>());
-        Trigger trigger = new Trigger(nextId++, event, commands);
+        Trigger trigger = new Trigger(nextId++, event, argument, commands);
         eventTriggers.add(trigger);
         save();
         return trigger;
