@@ -74,16 +74,34 @@ public class PythemcioCommand {
             "[PythemcIO] === PythemcIO Help ==="
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio add o <event> <command>              - Game -> OS trigger"
+            "  OUTPUT (game -> OS):"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio add o <event> filter <arg> <command>  - Game -> OS with filter"
+            "  /pythemcio add o <event> <command>              - Add game->OS trigger"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio add i <event> <action>                - OS -> Game trigger"
+            "  /pythemcio add o <event> filter <arg> <command>  - With filter"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio remove <event> <id>                   - Remove a trigger"
+            "  INPUT (OS -> game):"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  /pythemcio enable i                             - Start file watcher"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  Then write files to the inbox folder:"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "    echo 'Hello!' > inbox/chat                    - Send chat"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "    echo '/time set night' > inbox/command        - Run command"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "    echo 'Boss!' > inbox/title                    - Show title"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  GENERAL:"
         ));
         context.getSource().sendFeedback(Component.literal(
             "  /pythemcio list                                  - List all triggers"
@@ -96,15 +114,6 @@ public class PythemcioCommand {
         ));
         context.getSource().sendFeedback(Component.literal(
             "  /pythemcio disable [i|o]                         - Disable triggers"
-        ));
-        context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Output (o): game events -> OS commands"
-        ));
-        context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Input (i): HTTP API -> game actions (disabled by default)"
-        ));
-        context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Variables: $CONTEXT, $EVENT, $ITEM, $BLOCK, $ENTITY"
         ));
         return 1;
     }

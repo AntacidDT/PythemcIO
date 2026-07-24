@@ -1,8 +1,8 @@
 package com.pythemcio.server;
 
 import com.pythemcio.PythemcIO;
+import com.pythemcio.trigger.TriggerManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -30,7 +30,7 @@ public class FileWatcher {
             running = true;
 
             watchThread = new Thread(() -> {
-                PythemcIO.LOGGER.info("[PythemcIO] File watcher started. Watching: {}", inboxDir);
+                PythemcIO.LOGGER.info("[PythemcIO] File watcher started. Inbox: {}", inboxDir);
                 while (running) {
                     try {
                         WatchKey key = watchService.take();
@@ -88,9 +88,9 @@ public class FileWatcher {
                 return;
             }
 
-            String fileName = filePath.getFileName().toString();
-            String eventName = fileName;
+            if (!TriggerManager.isEnabledInput()) return;
 
+            String fileName = filePath.getFileName().toString();
             String payload;
             try {
                 payload = Files.readString(filePath).trim();
@@ -99,7 +99,7 @@ public class FileWatcher {
                 return;
             }
 
-            PythemcIO.LOGGER.info("[PythemcIO] File trigger: {} -> {}", eventName, payload);
+            PythemcIO.LOGGER.info("[PythemcIO] File trigger: {} -> {}", fileName, payload);
 
             Minecraft mc = Minecraft.getInstance();
             if (mc.player == null) {
@@ -108,20 +108,41 @@ public class FileWatcher {
                 return;
             }
 
-            String actionType = detectActionType(eventName);
-            String action = buildAction(actionType, eventName, payload);
+            String action = mapFileToAction(fileName, payload);
 
             mc.execute(() -> {
                 try {
-                    GameActionHandler.executeAction(actionType, action, mc);
-                    PythemcIO.LOGGER.info("[PythemcIO] File action executed: {} -> {}", eventName, action);
+                    GameActionHandler.executeAction(detectType(fileName), action, mc);
+                    PythemcIO.LOGGER.info("[PythemcIO] Executed: {}", action);
                 } catch (Exception e) {
-                    PythemcIO.LOGGER.error("[PythemcIO] Failed to execute file action: {}", action, e);
+                    PythemcIO.LOGGER.error("[PythemcIO] Failed to execute: {}", action, e);
                 }
             });
 
             deleteFile(filePath);
         });
+    }
+
+    private static String mapFileToAction(String fileName, String payload) {
+        return switch (fileName.toLowerCase()) {
+            case "chat" -> "chat " + payload;
+            case "command" -> "command " + payload;
+            case "title" -> "title " + payload;
+            case "subtitle" -> "subtitle " + payload;
+            case "actionbar" -> "actionbar " + payload;
+            default -> "chat " + payload;
+        };
+    }
+
+    private static String detectType(String fileName) {
+        return switch (fileName.toLowerCase()) {
+            case "chat" -> "send_chat";
+            case "command" -> "run_command";
+            case "title" -> "show_title";
+            case "subtitle" -> "show_subtitle";
+            case "actionbar" -> "action_bar";
+            default -> "send_chat";
+        };
     }
 
     private static void deleteFile(Path filePath) {
@@ -130,26 +151,5 @@ public class FileWatcher {
         } catch (IOException e) {
             PythemcIO.LOGGER.warn("[PythemcIO] Failed to delete inbox file: {}", filePath);
         }
-    }
-
-    private static String detectActionType(String eventName) {
-        String lower = eventName.toLowerCase();
-        if (lower.contains("chat")) return "send_chat";
-        if (lower.contains("command")) return "run_command";
-        if (lower.contains("title")) return "show_title";
-        if (lower.contains("subtitle")) return "show_subtitle";
-        if (lower.contains("actionbar")) return "action_bar";
-        return "send_chat";
-    }
-
-    private static String buildAction(String type, String eventName, String payload) {
-        return switch (type) {
-            case "send_chat" -> "chat " + payload;
-            case "run_command" -> "command " + payload;
-            case "show_title" -> "title " + payload;
-            case "show_subtitle" -> "subtitle " + payload;
-            case "action_bar" -> "actionbar " + payload;
-            default -> "chat " + payload;
-        };
     }
 }
