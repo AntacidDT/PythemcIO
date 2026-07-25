@@ -6,20 +6,30 @@ public class Trigger {
     private String argument;
     private String[] commands;
     private String direction;
+    private String scope;
     private String expectedOutput;
     private String scriptPath;
     private String gameAction;
 
     public Trigger(int id, String event, String argument, String[] commands, String direction) {
+        this(id, event, argument, commands, direction, "local");
+    }
+
+    public Trigger(int id, String event, String argument, String[] commands, String direction, String scope) {
         this.id = id;
         this.event = event;
         this.argument = argument;
         this.commands = commands;
         this.direction = direction;
+        this.scope = scope != null ? scope : "local";
     }
 
     public static Trigger createScriptTrigger(int id, String expectedOutput, String scriptPath, String gameAction) {
-        Trigger t = new Trigger(id, "script", null, new String[]{gameAction}, "i");
+        return createScriptTrigger(id, expectedOutput, scriptPath, gameAction, "local");
+    }
+
+    public static Trigger createScriptTrigger(int id, String expectedOutput, String scriptPath, String gameAction, String scope) {
+        Trigger t = new Trigger(id, "script", null, new String[]{gameAction}, "i", scope);
         t.expectedOutput = expectedOutput;
         t.scriptPath = scriptPath;
         t.gameAction = gameAction;
@@ -48,6 +58,22 @@ public class Trigger {
 
     public String getDirection() {
         return direction;
+    }
+
+    public String getScope() {
+        return scope;
+    }
+
+    public void setScope(String scope) {
+        this.scope = scope != null ? scope : "local";
+    }
+
+    public boolean isGlobal() {
+        return "global".equals(scope);
+    }
+
+    public boolean isLocal() {
+        return !"global".equals(scope);
     }
 
     public boolean isOutput() {
@@ -82,10 +108,11 @@ public class Trigger {
 
     @Override
     public String toString() {
+        String scopeStr = isGlobal() ? " [G]" : "";
         if (isScriptTrigger()) {
-            return "Trigger{id=" + id + ", expected='" + expectedOutput + "', script='" + scriptPath + "', action='" + gameAction + "'}";
+            return "Trigger{id=" + id + scopeStr + ", expected='" + expectedOutput + "', script='" + scriptPath + "', action='" + gameAction + "'}";
         }
         String argStr = hasArgument() ? ", argument='" + argument + "'" : "";
-        return "Trigger{id=" + id + ", direction='" + direction + "', event='" + event + "'" + argStr + ", commands=" + String.join(", ", commands) + "}";
+        return "Trigger{id=" + id + scopeStr + ", direction='" + direction + "', event='" + event + "'" + argStr + ", commands=" + String.join(", ", commands) + "}";
     }
 }

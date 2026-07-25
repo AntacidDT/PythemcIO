@@ -17,6 +17,15 @@ public class EventRegistry {
 
     public static void register() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            String worldName;
+            if (client.getCurrentServer() != null) {
+                worldName = "mp_" + client.getCurrentServer().name;
+            } else if (client.hasSingleplayerServer()) {
+                worldName = client.getSingleplayerServer().getWorldData().getLevelName();
+            } else {
+                worldName = "local";
+            }
+            TriggerManager.setWorld(worldName);
             fireEvent(EventType.PLAYER_JOIN, null);
         });
 
