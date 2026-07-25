@@ -91,7 +91,22 @@ class EventTypeTest {
     }
 
     @Test
+    void velocityName() {
+        assertEquals("velocity", EventType.VELOCITY.getName());
+    }
+
+    @Test
+    void jumpName() {
+        assertEquals("jump", EventType.JUMP.getName());
+    }
+
+    @Test
+    void coordinatesName() {
+        assertEquals("coordinates", EventType.COORDINATES.getName());
+    }
+
+    @Test
     void totalEventCount() {
-        assertEquals(25, EventType.values().length);
+        assertEquals(34, EventType.values().length);
     }
 }

@@ -146,6 +146,25 @@ public class TriggerManager {
         }
     }
 
+    public static void setDuration(int id, int seconds) {
+        for (List<Trigger> triggers : TRIGGERS.values()) {
+            for (Trigger t : triggers) {
+                if (t.getId() == id) {
+                    t.setDuration(seconds);
+                    save();
+                    return;
+                }
+            }
+        }
+        for (Trigger t : SCRIPT_TRIGGERS) {
+            if (t.getId() == id) {
+                t.setDuration(seconds);
+                save();
+                return;
+            }
+        }
+    }
+
     public static boolean isGlobalTriggerEnabled(int id) {
         return !disabledGlobalIds.contains(id);
     }

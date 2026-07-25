@@ -106,6 +106,11 @@ public class PythemcioConfigScreen extends Screen {
         ).bounds(startX + 5 * (buttonWidth + spacing), buttonY, buttonWidth, 20).build();
         addRenderableWidget(removeButton);
 
+        addRenderableWidget(Button.builder(
+            Component.literal("Credits"),
+            btn -> minecraft.setScreen(new CreditsScreen(this))
+        ).bounds(4, buttonY, 60, 20).build());
+
         updateButtons();
     }
 

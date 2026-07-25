@@ -200,4 +200,37 @@ class TriggerTest {
         String str = t.toString();
         assertFalse(str.contains("[G]"));
     }
+
+    @Test
+    void defaultDurationIsZero() {
+        Trigger t = new Trigger(1, "on_fire", null, new String[]{"echo burning"}, "o");
+        assertEquals(0, t.getDuration());
+    }
+
+    @Test
+    void setDuration() {
+        Trigger t = new Trigger(1, "on_fire", null, new String[]{"echo burning"}, "o");
+        t.setDuration(3);
+        assertEquals(3, t.getDuration());
+    }
+
+    @Test
+    void setDurationNegativeClampsToZero() {
+        Trigger t = new Trigger(1, "on_fire", null, new String[]{"echo burning"}, "o");
+        t.setDuration(-5);
+        assertEquals(0, t.getDuration());
+    }
+
+    @Test
+    void durationShowsInToString() {
+        Trigger t = new Trigger(1, "on_fire", null, new String[]{"echo burning"}, "o");
+        t.setDuration(5);
+        assertTrue(t.toString().contains("[dur:5s]"));
+    }
+
+    @Test
+    void durationZeroNotInToString() {
+        Trigger t = new Trigger(1, "on_fire", null, new String[]{"echo burning"}, "o");
+        assertFalse(t.toString().contains("[dur:"));
+    }
 }

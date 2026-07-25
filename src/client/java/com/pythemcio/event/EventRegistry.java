@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.world.InteractionResult;
 
 import java.util.List;
@@ -26,43 +27,54 @@ public class EventRegistry {
                 worldName = "local";
             }
             TriggerManager.setWorld(worldName);
-            fireEvent(EventType.PLAYER_JOIN, null);
+            fireEvent(EventType.PLAYER_JOIN, null, 0);
         });
 
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            fireEvent(EventType.PLAYER_LEAVE, null);
+            fireEvent(EventType.PLAYER_LEAVE, null, 0);
         });
 
         ClientSendMessageEvents.CHAT.register((message) -> {
-            fireEvent(EventType.CHAT_MESSAGE, message);
+            fireEvent(EventType.CHAT_MESSAGE, message, 0);
         });
 
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             String blockName = world.getBlockState(pos).getBlock().builtInRegistryHolder().key().location().toString();
-            fireEvent(EventType.BLOCK_BREAK, blockName);
+            fireEvent(EventType.BLOCK_BREAK, blockName, 0);
             return InteractionResult.PASS;
         });
 
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
             String blockName = world.getBlockState(hitResult.getBlockPos()).getBlock().builtInRegistryHolder().key().location().toString();
-            fireEvent(EventType.BLOCK_PLACE, blockName);
+            fireEvent(EventType.BLOCK_PLACE, blockName, 0);
+            fireEvent(EventType.BLOCK_INTERACT, blockName, 0);
             return InteractionResult.PASS;
         });
 
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
             String entityName = entity.getType().builtInRegistryHolder().key().location().toString();
-            fireEvent(EventType.PLAYER_ATTACK, entityName);
+            fireEvent(EventType.PLAYER_ATTACK, entityName, 0);
+            return InteractionResult.PASS;
+        });
+
+        UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            String entityName = entity.getType().builtInRegistryHolder().key().location().toString();
+            fireEvent(EventType.ENTITY_INTERACT, entityName, 0);
             return InteractionResult.PASS;
         });
 
         PythemcIO.LOGGER.info("[PythemcIO] Event registry initialized.");
     }
 
-    public static void fireEvent(EventType eventType, String context) {
-        fireEvent(eventType.getName(), context);
+    public static void fireEvent(EventType eventType, String context, int duration) {
+        fireEvent(eventType.getName(), context, duration);
     }
 
-    public static void fireEvent(String eventName, String context) {
+    public static void fireEvent(EventType eventType, String context) {
+        fireEvent(eventType.getName(), context, 0);
+    }
+
+    public static void fireEvent(String eventName, String context, int duration) {
         if (!TriggerManager.isEnabledOutput()) return;
 
         List<Trigger> triggers = TriggerManager.getTriggersForEvent(eventName);
@@ -71,6 +83,7 @@ public class EventRegistry {
         int matched = 0;
         for (Trigger trigger : triggers) {
             if (!trigger.matchesContext(context)) continue;
+            if (trigger.getDuration() > 0 && duration < trigger.getDuration()) continue;
             matched++;
             for (String command : trigger.getCommands()) {
                 String resolved = resolveVariables(command, eventName, context);

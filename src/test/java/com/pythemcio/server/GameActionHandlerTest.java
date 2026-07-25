@@ -55,4 +55,49 @@ class GameActionHandlerTest {
     void titlePrefixIsCaseInsensitive() {
         assertEquals("show_title", GameActionHandler.detectType("Title Hello"));
     }
+
+    @Test
+    void subtitlePrefixIsCaseInsensitive() {
+        assertEquals("show_subtitle", GameActionHandler.detectType("Subtitle World"));
+    }
+
+    @Test
+    void actionbarPrefixIsCaseInsensitive() {
+        assertEquals("action_bar", GameActionHandler.detectType("Actionbar Test"));
+    }
+
+    @Test
+    void leadingWhitespaceStillDetectsSlash() {
+        assertEquals("run_command", GameActionHandler.detectType("  /tp @s 0 0 0"));
+    }
+
+    @Test
+    void emptyStringDefaultsToChat() {
+        assertEquals("send_chat", GameActionHandler.detectType(""));
+    }
+
+    @Test
+    void onlySlashDefaultsToCommand() {
+        assertEquals("run_command", GameActionHandler.detectType("/"));
+    }
+
+    @Test
+    void chatPrefixWithExtraSpaces() {
+        assertEquals("send_chat", GameActionHandler.detectType("chat   hello"));
+    }
+
+    @Test
+    void commandPrefixWithExtraSpaces() {
+        assertEquals("run_command", GameActionHandler.detectType("command   tp @s"));
+    }
+
+    @Test
+    void singleWordDefaultsToChat() {
+        assertEquals("send_chat", GameActionHandler.detectType("hello"));
+    }
+
+    @Test
+    void numericStringDefaultsToChat() {
+        assertEquals("send_chat", GameActionHandler.detectType("12345"));
+    }
 }

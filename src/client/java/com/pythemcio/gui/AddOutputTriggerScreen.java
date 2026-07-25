@@ -21,7 +21,11 @@ public class AddOutputTriggerScreen extends Screen {
     private static final Set<String> FILTERABLE_EVENTS = Set.of(
         "using_item", "item_pickup", "item_drop",
         "block_break", "block_place",
-        "player_attack", "chat_message"
+        "player_attack", "chat_message",
+        "dimension_change", "death", "time_change",
+        "velocity", "jump", "coordinates",
+        "item_consume", "block_interact", "entity_interact",
+        "potion_effect", "health_change"
     );
 
     private static final List<String> EVENT_NAMES = Arrays.stream(EventType.values())

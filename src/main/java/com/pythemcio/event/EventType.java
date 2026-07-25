@@ -25,7 +25,16 @@ public enum EventType {
     SPRINT("sprint"),
     ELYTRA("elytra"),
     SNEAK("sneak"),
-    USING_ITEM("using_item");
+    USING_ITEM("using_item"),
+    VELOCITY("velocity"),
+    JUMP("jump"),
+    COORDINATES("coordinates"),
+    ITEM_CONSUME("item_consume"),
+    BLOCK_INTERACT("block_interact"),
+    ENTITY_INTERACT("entity_interact"),
+    POTION_EFFECT("potion_effect"),
+    TOTEM("totem"),
+    FLY("fly");
 
     private final String name;
 

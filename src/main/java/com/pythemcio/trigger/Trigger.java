@@ -7,6 +7,7 @@ public class Trigger {
     private String[] commands;
     private String direction;
     private String scope;
+    private int duration;
     private String expectedOutput;
     private String scriptPath;
     private String gameAction;
@@ -22,6 +23,15 @@ public class Trigger {
         this.commands = commands;
         this.direction = direction;
         this.scope = scope != null ? scope : "local";
+        this.duration = 0;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = Math.max(0, duration);
     }
 
     public static Trigger createScriptTrigger(int id, String expectedOutput, String scriptPath, String gameAction) {
@@ -109,10 +119,11 @@ public class Trigger {
     @Override
     public String toString() {
         String scopeStr = isGlobal() ? " [G]" : "";
+        String durStr = duration > 0 ? " [dur:" + duration + "s]" : "";
         if (isScriptTrigger()) {
-            return "Trigger{id=" + id + scopeStr + ", expected='" + expectedOutput + "', script='" + scriptPath + "', action='" + gameAction + "'}";
+            return "Trigger{id=" + id + scopeStr + durStr + ", expected='" + expectedOutput + "', script='" + scriptPath + "', action='" + gameAction + "'}";
         }
         String argStr = hasArgument() ? ", argument='" + argument + "'" : "";
-        return "Trigger{id=" + id + scopeStr + ", direction='" + direction + "', event='" + event + "'" + argStr + ", commands=" + String.join(", ", commands) + "}";
+        return "Trigger{id=" + id + scopeStr + durStr + ", direction='" + direction + "', event='" + event + "'" + argStr + ", commands=" + String.join(", ", commands) + "}";
     }
 }

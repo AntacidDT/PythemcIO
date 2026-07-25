@@ -50,14 +50,15 @@ user privileges.
 disabled through /pythemcio disable (re-enable with /pythemcio enable)
 
 Command syntax:
-/pythemcio add <event> <command>                    → fires for all occurrences
-/pythemcio add <event> filter <argument> <command>  → fires only when filter matches
-/pythemcio remove <event> <id>                      → remove a trigger by ID
-/pythemcio list                                     → list all triggers
-/pythemcio clear                                    → remove all triggers
-/pythemcio disable                                  → disable all triggers
-/pythemcio enable                                   → enable all triggers
-/pythemcio help                                     → show help
+/pythemcio add -o <event> <command>                    → fires for all occurrences
+/pythemcio add -o <event> filter <argument> <command>  → fires only when filter matches
+/pythemcio remove <id>                                 → remove a trigger by ID
+/pythemcio list                                        → list all triggers
+/pythemcio clear                                       → remove all triggers
+/pythemcio disable [-i|-o]                             → disable triggers/scripts
+/pythemcio enable [-i|-o]                              → enable triggers/scripts
+/pythemcio scope <id> global|local                     → change trigger scope
+/pythemcio help                                        → show help
 
 Variable substitution in commands:
 $CONTEXT — the context string (item/block/entity name, message text)
@@ -66,19 +67,22 @@ $ITEM — alias for $CONTEXT
 $BLOCK — alias for $CONTEXT
 $ENTITY — alias for $CONTEXT
 
-Filterable events (7):
-- using_item [item]     → context: item name (e.g. minecraft:bow)
-- item_pickup [item]    → context: item name
-- item_drop [item]      → context: item name
-- block_break [block]   → context: block name (e.g. minecraft:diamond_ore)
-- block_place [block]   → context: block name
-- player_attack [entity] → context: entity type (e.g. minecraft:creeper)
-- chat_message [keyword] → context: message text
+Filterable events (10):
+- using_item [item]          → context: item name (e.g. minecraft:bow)
+- item_pickup [item]         → context: item name
+- item_drop [item]           → context: item name
+- block_break [block]        → context: block name (e.g. minecraft:diamond_ore)
+- block_place [block]        → context: block name
+- player_attack [entity]     → context: entity type (e.g. minecraft:creeper)
+- chat_message [keyword]     → context: message text
+- dimension_change [dim]     → context: nether, end, or overworld
+- death [cause]              → context: entity type or damage cause (e.g. minecraft:creeper, inFire)
+- time_change [time]         → context: day or night
 
-Non-filterable events (18):
-player_join, player_leave, dimension_change, health_change,
-food_change, armor_change, xp_change, death, respawn,
-sleep, wake_up, time_change, on_fire, in_water, sprint,
+Non-filterable events (15):
+player_join, player_leave, health_change,
+food_change, armor_change, xp_change, respawn,
+sleep, wake_up, on_fire, in_water, sprint,
 elytra, sneak, redstone_signal
 
 Cooldown: 3 second debounce per command to prevent spam

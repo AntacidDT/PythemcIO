@@ -23,7 +23,11 @@ public class PythemcioCommand {
     private static final Set<String> FILTERABLE_EVENTS = Set.of(
         "using_item", "item_pickup", "item_drop",
         "block_break", "block_place",
-        "player_attack", "chat_message"
+        "player_attack", "chat_message",
+        "dimension_change", "death", "time_change",
+        "velocity", "jump", "coordinates",
+        "item_consume", "block_interact", "entity_interact",
+        "potion_effect", "health_change"
     );
 
     public static void register() {
@@ -31,8 +35,10 @@ public class PythemcioCommand {
             dispatcher.register(ClientCommandManager.literal("pythemcio")
                 .then(ClientCommandManager.literal("help")
                     .executes(PythemcioCommand::executeHelp))
+                .then(ClientCommandManager.literal("credits")
+                    .executes(PythemcioCommand::executeCredits))
                 .then(ClientCommandManager.literal("add")
-                    .then(ClientCommandManager.literal("o")
+                    .then(ClientCommandManager.literal("-output")
                         .then(ClientCommandManager.literal("global")
                             .then(ClientCommandManager.argument("event", StringArgumentType.word())
                                 .then(ClientCommandManager.literal("filter")
@@ -56,7 +62,7 @@ public class PythemcioCommand {
                                         .executes(ctx -> executeAddOutput(ctx, true, "local")))))
                             .then(ClientCommandManager.argument("command", StringArgumentType.greedyString())
                                 .executes(ctx -> executeAddOutput(ctx, false, "local")))))
-                    .then(ClientCommandManager.literal("i")
+                    .then(ClientCommandManager.literal("-input")
                         .then(ClientCommandManager.literal("global")
                             .then(ClientCommandManager.argument("input", StringArgumentType.greedyString())
                                 .executes(ctx -> executeAddInput(ctx, "global"))))
@@ -78,20 +84,43 @@ public class PythemcioCommand {
                             .executes(ctx -> executeSetScope(ctx, "global")))
                         .then(ClientCommandManager.literal("local")
                             .executes(ctx -> executeSetScope(ctx, "local")))))
+                .then(ClientCommandManager.literal("duration")
+                    .then(ClientCommandManager.argument("id", IntegerArgumentType.integer(1))
+                        .then(ClientCommandManager.argument("seconds", IntegerArgumentType.integer(0))
+                            .executes(PythemcioCommand::executeSetDuration))))
                 .then(ClientCommandManager.literal("disable")
                     .executes(PythemcioCommand::executeDisableAll)
-                    .then(ClientCommandManager.literal("i")
+                    .then(ClientCommandManager.literal("-input")
                         .executes(PythemcioCommand::executeDisableInput))
-                    .then(ClientCommandManager.literal("o")
+                    .then(ClientCommandManager.literal("-output")
                         .executes(PythemcioCommand::executeDisableOutput)))
                 .then(ClientCommandManager.literal("enable")
                     .executes(PythemcioCommand::executeEnableAll)
-                    .then(ClientCommandManager.literal("i")
+                    .then(ClientCommandManager.literal("-input")
                         .executes(PythemcioCommand::executeEnableInput))
-                    .then(ClientCommandManager.literal("o")
+                    .then(ClientCommandManager.literal("-output")
                         .executes(PythemcioCommand::executeEnableOutput)))
             );
         });
+    }
+
+    private static int executeCredits(CommandContext<FabricClientCommandSource> context) {
+        context.getSource().sendFeedback(Component.literal(
+            "[PythemcIO] === Credits ==="
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  Author: AntacidDT"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  GitHub: https://github.com/AntacidDT/PythemcIO"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  License: Apache-2.0"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  Released: 24.07.2026"
+        ));
+        return 1;
     }
 
     private static int executeHelp(CommandContext<FabricClientCommandSource> context) {
@@ -102,46 +131,61 @@ public class PythemcioCommand {
             "  OUTPUT (game -> OS):"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio add o <event> <command>                - Game -> OS trigger (local)"
+            "  /pythemcio add -output <event> <command>               - Game -> OS trigger (local)"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio add o global <event> <command>         - Game -> OS trigger (global)"
+            "  /pythemcio add -output global <event> <command>        - Game -> OS trigger (global)"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio add o <event> filter <arg> <command>   - Game -> OS with filter"
+            "  /pythemcio add -output <event> filter <arg> <command>  - Game -> OS with filter"
         ));
         context.getSource().sendFeedback(Component.literal(
             "  INPUT (OS -> game):"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio add i \"output\" from <script> then <action>"
+            "  /pythemcio add -input \"output\" from <script> then <action>"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio add i global \"output\" from <script> then <action>"
+            "  /pythemcio add -input global \"output\" from <script> then <action>"
         ));
         context.getSource().sendFeedback(Component.literal(
             "  GENERAL:"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio enable [i|o]     - Enable (start scripts for i)"
+            "  /pythemcio enable [-input|-output]    - Enable (start scripts for -input)"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio disable [i|o]    - Disable (kill scripts for i)"
+            "  /pythemcio disable [-input|-output]   - Disable (kill scripts for -input)"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio list             - List all triggers + running scripts"
+            "  /pythemcio list              - List all triggers + running scripts"
         ));
         context.getSource().sendFeedback(Component.literal(
             "  /pythemcio scope <id> global|local - Change trigger scope"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio remove <id>      - Remove trigger by ID"
+            "  /pythemcio duration <id> <sec>    - Set min active time (for continuous events)"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  /pythemcio clear            - Remove all triggers"
+            "  /pythemcio remove <id>       - Remove trigger by ID"
         ));
         context.getSource().sendFeedback(Component.literal(
-            "  Scopes: local = this world only, global = all worlds (toggleable per-world)"
+            "  /pythemcio clear             - Remove all triggers"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  Filterable: using_item, item_pickup, item_drop,"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  block_break, block_place, player_attack, chat_message,"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  dimension_change, death, time_change, health_change,"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  velocity, jump, coordinates, item_consume,"
+        ));
+        context.getSource().sendFeedback(Component.literal(
+            "  block_interact, entity_interact, potion_effect"
         ));
         return 1;
     }
@@ -200,7 +244,7 @@ public class PythemcioCommand {
         int fromIdx = input.indexOf(" from ");
         if (fromIdx == -1) {
             context.getSource().sendError(Component.literal(
-                "[PythemcIO] Invalid syntax. Use: /pythemcio add i [global] \"output\" from <script> then <action>"
+                "[PythemcIO] Invalid syntax. Use: /pythemcio add -input [global] \"output\" from <script> then <action>"
             ));
             return 0;
         }
@@ -208,7 +252,7 @@ public class PythemcioCommand {
         int thenIdx = input.indexOf(" then ", fromIdx + 6);
         if (thenIdx == -1) {
             context.getSource().sendError(Component.literal(
-                "[PythemcIO] Invalid syntax. Use: /pythemcio add i [global] \"output\" from <script> then <action>"
+                "[PythemcIO] Invalid syntax. Use: /pythemcio add -input [global] \"output\" from <script> then <action>"
             ));
             return 0;
         }
@@ -219,7 +263,7 @@ public class PythemcioCommand {
 
         if (expectedOutput.isEmpty() || scriptPath.isEmpty() || gameAction.isEmpty()) {
             context.getSource().sendError(Component.literal(
-                "[PythemcIO] All fields required. Use: /pythemcio add i [global] \"output\" from <script> then <action>"
+                "[PythemcIO] All fields required. Use: /pythemcio add -input [global] \"output\" from <script> then <action>"
             ));
             return 0;
         }
@@ -231,7 +275,7 @@ public class PythemcioCommand {
             "[PythemcIO] + #" + trigger.getId() + " [i]" + scopeStr + " \"" + expectedOutput + "\" from " + scriptPath + " then " + gameAction
         ));
         context.getSource().sendFeedback(Component.literal(
-            "[PythemcIO] Run /pythemcio enable i to start the script."
+            "[PythemcIO] Run /pythemcio enable -input to start the script."
         ));
         return 1;
     }
@@ -262,6 +306,22 @@ public class PythemcioCommand {
         return 1;
     }
 
+    private static int executeSetDuration(CommandContext<FabricClientCommandSource> context) {
+        int id = context.getArgument("id", Integer.class);
+        int seconds = context.getArgument("seconds", Integer.class);
+        TriggerManager.setDuration(id, seconds);
+        if (seconds > 0) {
+            context.getSource().sendFeedback(Component.literal(
+                "[PythemcIO] Trigger #" + id + " duration set to " + seconds + "s"
+            ));
+        } else {
+            context.getSource().sendFeedback(Component.literal(
+                "[PythemcIO] Trigger #" + id + " duration removed"
+            ));
+        }
+        return 1;
+    }
+
     private static int executeList(CommandContext<FabricClientCommandSource> context) {
         String outStatus = TriggerManager.isEnabledOutput() ? "ENABLED" : "DISABLED";
         String inStatus = TriggerManager.isEnabledInput() ? "ENABLED" : "DISABLED";
@@ -280,9 +340,10 @@ public class PythemcioCommand {
                 for (Trigger trigger : entry.getValue()) {
                     String scopeStr = trigger.isGlobal() ? " [G]" : "";
                     String enabledStr = trigger.isGlobal() && !TriggerManager.isGlobalTriggerEnabled(trigger.getId()) ? " [OFF]" : "";
+                    String durStr = trigger.getDuration() > 0 ? " [dur:" + trigger.getDuration() + "s]" : "";
                     String argStr = trigger.hasArgument() ? " (filter: " + trigger.getArgument() + ")" : "";
                     context.getSource().sendFeedback(Component.literal(
-                        "  #" + trigger.getId() + " [o]" + scopeStr + enabledStr + " [" + trigger.getEvent() + "]" + argStr + " -> " + String.join(", ", trigger.getCommands())
+                        "  #" + trigger.getId() + " [o]" + scopeStr + enabledStr + durStr + " [" + trigger.getEvent() + "]" + argStr + " -> " + String.join(", ", trigger.getCommands())
                     ));
                     total++;
                 }
