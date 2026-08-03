@@ -1,3 +1,5 @@
+<img src="assets/pythemcio-logo.jpg" alt="PythemcIO" width="100">
+
 # PythemcIO
 
 A Fabric mod that links Minecraft Java 1.21.4 events to OS commands, and OS scripts to in-game actions.
