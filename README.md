@@ -6,6 +6,14 @@ A Fabric mod that links Minecraft Java 1.21.4 events to OS commands, and OS scri
 
 **Version:** 0.95 | **Loader:** Fabric | **Minecraft:** 1.21.4 | **Java:** 21
 
+## Screenshots
+
+<img src="assets/pythemcio-menu.png" alt="Config menu" width="300">
+
+| Output trigger setup | Input trigger setup |
+|----------------------|---------------------|
+| <img src="assets/pythemcio-output.png" alt="Output trigger" width="300"> | <img src="assets/pythemcio-input.png" alt="Input trigger" width="300"> |
+
 ---
 
 ## What it does
