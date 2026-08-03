@@ -3,7 +3,7 @@
   "id": "pythemcio",
   "version": "${version}",
   "name": "PythemcIO",
-  "description": "Link in-game events to OS commands",
+  "description": "PythemcIO by AntacidDT\nAllows you to link your game to your OS\nLicense: Apache 2.0",
   "authors": [
     "AntacidDT"
   ],
