@@ -1,6 +1,7 @@
 package com.pythemcio.event;
 
 import com.pythemcio.PythemcIO;
+import com.pythemcio.compat.MCCompat;
 import com.pythemcio.executor.CommandExecutor;
 import com.pythemcio.trigger.Trigger;
 import com.pythemcio.trigger.TriggerManager;
@@ -39,26 +40,26 @@ public class EventRegistry {
         });
 
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
-            String blockName = world.getBlockState(pos).getBlock().builtInRegistryHolder().key().location().toString();
+            String blockName = MCCompat.blockName(world.getBlockState(pos));
             fireEvent(EventType.BLOCK_BREAK, blockName, 0);
             return InteractionResult.PASS;
         });
 
         UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
-            String blockName = world.getBlockState(hitResult.getBlockPos()).getBlock().builtInRegistryHolder().key().location().toString();
+            String blockName = MCCompat.blockName(world.getBlockState(hitResult.getBlockPos()));
             fireEvent(EventType.BLOCK_PLACE, blockName, 0);
             fireEvent(EventType.BLOCK_INTERACT, blockName, 0);
             return InteractionResult.PASS;
         });
 
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            String entityName = entity.getType().builtInRegistryHolder().key().location().toString();
+            String entityName = MCCompat.entityTypeName(entity.getType());
             fireEvent(EventType.PLAYER_ATTACK, entityName, 0);
             return InteractionResult.PASS;
         });
 
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-            String entityName = entity.getType().builtInRegistryHolder().key().location().toString();
+            String entityName = MCCompat.entityTypeName(entity.getType());
             fireEvent(EventType.ENTITY_INTERACT, entityName, 0);
             return InteractionResult.PASS;
         });

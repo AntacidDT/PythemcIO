@@ -4,7 +4,7 @@
 
 A Fabric mod that links Minecraft Java 1.21.4 events to OS commands, and OS scripts to in-game actions.
 
-**Version:** 0.95 | **Loader:** Fabric | **Minecraft:** 1.21.4 | **Java:** 21
+**Version:** 0.95 | **Loader:** Fabric | **Minecraft:** 1.21.4 and 1.21.11 | **Java:** 21
 
 ## Screenshots
 
@@ -135,7 +135,7 @@ Press Escape in-game and click the **PythemcIO** button to open the config scree
 
 ## Installation
 
-1. Install [Fabric Loader](https://fabricmc.net/) for Minecraft 1.21.4
+1. Install [Fabric Loader](https://fabricmc.net/) for Minecraft 1.21.4 or 1.21.11
 2. Install [Fabric API](https://modrinth.com/mod/fabric-api)
 3. Download `PythemcIO` from [Releases](https://github.com/AntacidDT/PythemcIO/releases)
 4. Drop the `.jar` into your `mods/` folder
@@ -145,7 +145,8 @@ Press Escape in-game and click the **PythemcIO** button to open the config scree
 ```bash
 git clone https://github.com/AntacidDT/PythemcIO.git
 cd PythemcIO
-./gradlew build
+./gradlew build                    # builds for 1.21.4 (default)
+./gradlew build -Pmc_version=1.21.11   # builds for 1.21.11
 ```
 
 The built jar will be in `build/libs/`.

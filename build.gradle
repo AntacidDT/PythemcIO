@@ -1,7 +1,20 @@
 plugins {
-    id 'fabric-loom' version '1.9-SNAPSHOT'
+    id 'fabric-loom' version "${loom_version}"
     id 'maven-publish'
 }
+
+def mcVersion = providers.gradleProperty('mc_version').orElse('1.21.4').get()
+def mcVersions = [
+    '1.21.4':  [minecraft: '1.21.4',  loader: '0.19.3', fabricApi: '0.119.4+1.21.4'],
+    '1.21.11': [minecraft: '1.21.11', loader: '0.19.3', fabricApi: '0.141.6+1.21.11'],
+]
+def mcProps = mcVersions[mcVersion]
+if (mcProps == null) {
+    throw new GradleException("Unsupported mc_version '${mcVersion}'. Supported: ${mcVersions.keySet()}")
+}
+ext.minecraft_version = mcProps.minecraft
+ext.loader_version = mcProps.loader
+ext.fabric_api_version = mcProps.fabricApi
 
 version = project.mod_version
 group = project.maven_group
@@ -24,6 +37,19 @@ loom {
     }
 }
 
+sourceSets {
+    main {
+        java {
+            srcDir "src/versions/${mcVersion}/main/java"
+        }
+    }
+    client {
+        java {
+            srcDir "src/versions/${mcVersion}/client/java"
+        }
+    }
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
@@ -40,9 +66,10 @@ test {
 
 processResources {
     inputs.property "version", project.version
+    inputs.property "minecraft_version", project.minecraft_version
 
     filesMatching("fabric.mod.json") {
-        expand "version": project.version
+        expand "version": project.version, "minecraft_version": project.minecraft_version
     }
 }
 

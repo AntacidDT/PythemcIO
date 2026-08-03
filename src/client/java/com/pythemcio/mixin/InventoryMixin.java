@@ -1,5 +1,6 @@
 package com.pythemcio.mixin;
 
+import com.pythemcio.compat.MCCompat;
 import com.pythemcio.event.EventRegistry;
 import com.pythemcio.event.EventType;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,8 +16,7 @@ public class InventoryMixin {
     @Inject(method = "add(Lnet/minecraft/world/item/ItemStack;)Z", at = @At("RETURN"))
     private void onItemAdded(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValue() && !stack.isEmpty()) {
-            String itemName = stack.getItem().builtInRegistryHolder().key().location().toString();
-            EventRegistry.fireEvent(EventType.ITEM_PICKUP, itemName);
+            EventRegistry.fireEvent(EventType.ITEM_PICKUP, MCCompat.itemName(stack));
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.pythemcio.mixin;
 
+import com.pythemcio.compat.MCCompat;
 import com.pythemcio.event.EventRegistry;
 import com.pythemcio.event.EventType;
 import net.minecraft.client.player.LocalPlayer;
@@ -17,10 +18,9 @@ public class LocalPlayerMixin {
     private void onItemDropped(boolean fullStack, CallbackInfoReturnable<Boolean> cir) {
         LocalPlayer self = (LocalPlayer) (Object) this;
         Inventory inv = self.getInventory();
-        ItemStack held = inv.getSelected();
+        ItemStack held = MCCompat.selectedItem(inv);
         if (!held.isEmpty()) {
-            String itemName = held.getItem().builtInRegistryHolder().key().location().toString();
-            EventRegistry.fireEvent(EventType.ITEM_DROP, itemName);
+            EventRegistry.fireEvent(EventType.ITEM_DROP, MCCompat.itemName(held));
         }
     }
 }

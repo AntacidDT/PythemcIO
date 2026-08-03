@@ -1,6 +1,7 @@
 package com.pythemcio.event;
 
 import com.pythemcio.PythemcIO;
+import com.pythemcio.compat.MCCompat;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -85,12 +86,12 @@ public class PlayerStateTracker {
     private static void checkDimension(LocalPlayer player) {
         ResourceKey<Level> current = player.level().dimension();
         if (prevDimension != null && current != prevDimension) {
-            String dimName = current.location().toString();
+            String dimName = MCCompat.resourceKeyName(current);
             String shortName;
             if (dimName.contains("nether")) shortName = "nether";
             else if (dimName.contains("end")) shortName = "end";
             else shortName = "overworld";
-            PythemcIO.LOGGER.info("[PythemcIO] Dimension changed: {} -> {}", prevDimension.location(), dimName);
+            PythemcIO.LOGGER.info("[PythemcIO] Dimension changed: {} -> {}", MCCompat.resourceKeyName(prevDimension), dimName);
             EventRegistry.fireEvent(EventType.DIMENSION_CHANGE, shortName, 0);
         }
         prevDimension = current;
@@ -142,7 +143,7 @@ public class PlayerStateTracker {
             if (player.getLastDamageSource() != null) {
                 cause = player.getLastDamageSource().getMsgId();
                 if (player.getLastDamageSource().getEntity() != null) {
-                    cause = player.getLastDamageSource().getEntity().getType().builtInRegistryHolder().key().location().toString();
+                    cause = MCCompat.entityTypeName(player.getLastDamageSource().getEntity().getType());
                 }
             }
             PythemcIO.LOGGER.info("[PythemcIO] Player died (cause: {})", cause);
@@ -264,7 +265,7 @@ public class PlayerStateTracker {
         boolean current = player.isUsingItem();
         if (!prevUsingItem && current) {
             usingItemTicks = 1;
-            String itemName = player.getUseItem().getItem().builtInRegistryHolder().key().location().toString();
+            String itemName = MCCompat.itemName(player.getUseItem());
             lastUsedItem = itemName;
             PythemcIO.LOGGER.info("[PythemcIO] Player started using item: {}", itemName);
             EventRegistry.fireEvent(EventType.USING_ITEM, itemName, 0);
